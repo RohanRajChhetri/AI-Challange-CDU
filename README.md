@@ -15,7 +15,7 @@ EquiTriage is a decision-support system for housing maintenance dispatch that co
 
 ## How It Works
 
-1. **Signal Extraction (Slow, Cached)**: 
+1. **Signal Extraction (Slow, Cached)**:
    - The Laya AI model processes each ticket text to extract:
      - Category (plumbing, electrical, structural, pest, other)
      - Safety hazard probability (0.0-1.0)
@@ -38,42 +38,40 @@ EquiTriage is a decision-support system for housing maintenance dispatch that co
 
 ## Files in This Repository
 
-- pp.py - Streamlit web interface for interactive triage
-- quitriage_engine.py - Core logic for signal extraction, scoring, and policy application
+- app.py - Streamlit web interface for interactive triage
+- equitriage_engine.py - Core logic for signal extraction, scoring, and policy application
 - main.py - Command-line version that demonstrates the core algorithm
 - maintenance_tickets.csv - Sample maintenance ticket data
 - maintenance_tickets_large.csv - Larger sample dataset
-- udit_log.jsonl - Generated log of human decisions (created when used)
+- audit_log.jsonl - Generated log of human decisions (created when used)
 
 ## Installation
 
 1. Clone this repository
 2. Create a virtual environment (optional but recommended):
-   `ash
-   python -m venv venv
-   venv\Scripts\activate
-   `
+   `python -m venv venv
+.\venv\Scripts\activate`
 3. Install dependencies:
-   `ash
+
    pip install streamlit pandas numpy
    `
+
 4. Install the Laya model (this appears to be a proprietary model - check with your provider for installation instructions)
 
 ## Usage
 
 ### Web Interface (Recommended)
-`ash
-streamlit run app.py
-`
+
+`streamlit run app.py`
 
 ### Command Line
-`ash
-python main.py
-`
+
+`python main.py`
 
 ## Interpreting the Results
 
 The system shows:
+
 - **Rank**: Current position in the equity-adjusted queue
 - **Ticket**: Ticket ID
 - **Location**: Community/location
@@ -89,6 +87,7 @@ The system shows:
 ## Equity Trade-Off Visualization
 
 The "Price of Equity" tab shows concretely what choosing equity over pure efficiency means:
+
 - How much extra travel distance is incurred
 - How many more remote jobs get completed
 - How communities visited change
@@ -97,6 +96,7 @@ The "Price of Equity" tab shows concretely what choosing equity over pure effici
 ## Audit System
 
 All human decisions are logged to udit_log.jsonl with:
+
 - Timestamp
 - Ticket ID
 - System rank vs efficiency rank
@@ -109,6 +109,7 @@ All human decisions are logged to udit_log.jsonl with:
 ## Customization
 
 Adjust the policy sliders in the sidebar to see how different equity preferences affect:
+
 - The dispatch queue
 - Which tickets move up/down
 - The price of equity metrics
@@ -117,11 +118,12 @@ Adjust the policy sliders in the sidebar to see how different equity preferences
 ## Data Requirements
 
 The system expects CSV files with these columns:
-- 	icket_id: Unique identifier
+
+-     Ticket_id: Unique identifier
 - location: Community/location name
 - distance_km: Distance from depot (kilometers)
 - days_waiting: How many days the ticket has been waiting
-- 	ext: Free-text description of the maintenance issue
+-     Text: Free-text description of the maintenance issue
 
 ## Design Principles
 
@@ -141,4 +143,4 @@ The system expects CSV files with these columns:
 
 ---
 
-*EquiTriage makes equity in public service delivery visible, controllable, and accountable."
+\*EquiTriage makes equity in public service delivery visible, controllable, and accountable."
