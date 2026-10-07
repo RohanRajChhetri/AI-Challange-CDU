@@ -1,0 +1,5 @@
+ticket_id,location,distance_km,days_waiting,text,efficiency_arg,equity_arg,synthesis
+TKT-101,Darwin (Urban),15,2,Aircon dripping slightly in the living room. Not urgent but annoying.,,,
+TKT-102,Alice Springs (Urban),10,4,Power point in kitchen sparking when I plug in the kettle.,,,
+TKT-103,Yuendumu (Remote),290,45,Main water pipe to house is leaking into the yard. Pressure is low.,"Bypassing this ticket allows the fleet to clear 4 jobs in Darwin today, maximizing resource utility.","This ticket has breached the 30-day SLA. The safety hazard (leaking main pipe) in a remote community represents a critical health risk.","FRICTION DETECTED: Assigning TKT-103 burns 8 hours of travel time (Efficiency Loss), but deferring it violates remote health SLAs for the 3rd consecutive week (Equity Violation)."
+TKT-104,Maningrida (Remote),500,35,"Flyscreen torn in the bedroom, lots of mosquitoes getting in.",,,
