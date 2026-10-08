@@ -86,17 +86,22 @@ TERMINAL_CSS = """
         background-color: #ffa502; color: black; padding: 2px 6px; font-weight: bold; border-radius: 3px; font-size: 11px;
     }
 
-    /* Fix Pydeck 3D Deck Hover Tooltip Layout & Clipping */
+    /* Fix Pydeck 3D Deck Hover Tooltip Layout, Typography & Box Model */
+    .deck-tooltip, [class*="deck-tooltip"],
+    .deck-tooltip *, [class*="deck-tooltip"] * {
+        box-sizing: border-box !important;
+    }
+
     .deck-tooltip, [class*="deck-tooltip"] {
         z-index: 99999999 !important;
         background-color: #121212 !important;
         color: #FFFFFF !important;
         border: 1px solid #FFBF00 !important;
-        border-radius: 4px !important;
+        border-radius: 6px !important;
         box-shadow: 0 8px 30px rgba(0,0,0,0.95) !important;
-        padding: 8px 10px !important;
-        font-family: 'Courier New', Courier, monospace !important;
-        width: 310px !important;
+        padding: 10px 14px !important;
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif !important;
+        width: 320px !important;
         max-width: 320px !important;
         white-space: normal !important;
         word-wrap: break-word !important;
@@ -189,10 +194,10 @@ with st.sidebar:
         st.stop()
 
     st.markdown("---")
-    st.markdown("### `[ STRESS TEST SIMULATION ]`")
+    st.markdown("### `[ EXTREME WEATHER STRESS TEST ]`")
     st.caption("Stress-test system resilience against extreme monsoonal & cyclone surges.")
     cyclone_surge_count = st.slider(
-        "Cyclone Season Storm Surge (+tickets)",
+        "Cyclone & Monsoon Surge Simulation (+tickets)",
         min_value=0,
         max_value=50,
         value=0,
@@ -201,31 +206,31 @@ with st.sidebar:
     )
 
     st.markdown("---")
-    st.markdown("### `[ POLICY DIALS ]`")
+    st.markdown("### `[ DISPATCH POLICY DIALS ]`")
     st.caption("Human governance dials. Adjusting any dial recalculates rankings instantly.")
     equity = st.slider(
-        "Equity weight  (0 = cheapest trip first, 100 = distance-blind)", 0, 100, 55
+        "Equity Weight (0% = Lowest Fuel Cost, 100% = Equal Remote Priority)", 0, 100, 55
     ) / 100
 
-    with st.expander("Safety & Guardrails", expanded=True):
-        safety_floor = st.slider("Safety floor: always dispatch above risk", 0.0, 1.0, 0.70, 0.05)
-        max_wait = st.slider("Max wait guardrail (days)", 7, 120, 45)
+    with st.expander("Critical Safety & Wait-Time Guardrails", expanded=True):
+        safety_floor = st.slider("Critical Safety Override (Immediate dispatch threshold)", 0.0, 1.0, 0.70, 0.05)
+        max_wait = st.slider("Max Wait Time Guardrail (days)", 7, 120, 45)
 
-    with st.expander("Context-Aware & Bundling Controls", expanded=True):
-        chronic_boost = st.slider("Chronic failure urgency boost (%)", 0, 100, 50, 10) / 100
-        chronic_threshold = st.slider("Chronic detection threshold", 0.40, 0.90, 0.60, 0.05)
-        fleet_km_cost = st.slider("Fleet operating cost ($/km)", 1.00, 3.00, 1.50, 0.25)
+    with st.expander("Property History & Trip Bundling Controls", expanded=True):
+        chronic_boost = st.slider("Repeat Failure Urgency Boost (%)", 0, 100, 50, 10) / 100
+        chronic_threshold = st.slider("Repeat Issue Detection Confidence", 0.40, 0.90, 0.60, 0.05)
+        fleet_km_cost = st.slider("Fleet Contractor Operating Cost ($/km)", 1.00, 3.00, 1.50, 0.25)
 
-    with st.expander("Advanced Weights"):
-        travel_cost = st.slider("Travel penalty per 100 km (efficiency view)", 0.0, 1.0, 0.25, 0.05)
-        remote_uplift = st.slider("Remote uplift per 100 km (at 100% equity)", 0.0, 0.5, 0.10, 0.01)
-        wait_pct = st.slider("Priority gain per day waiting (%)", 0.0, 5.0, 2.0, 0.5)
+    with st.expander("Advanced Cost & Remote Weights"):
+        travel_cost = st.slider("Distance Penalty per 100 km (Cheapest-trip view)", 0.0, 1.0, 0.25, 0.05)
+        remote_uplift = st.slider("Remote Uplift per 100 km (At 100% equity)", 0.0, 0.5, 0.10, 0.01)
+        wait_pct = st.slider("Priority Gain per Day Waiting (%)", 0.0, 5.0, 2.0, 0.5)
 
     # Dynamic capacity based on total available tickets
     total_potential = len(raw_tickets_df) + cyclone_surge_count
-    st.markdown("### `[ WEEKLY FLEET CAPACITY ]`")
+    st.markdown("### `[ WEEKLY CONTRACTOR CAPACITY ]`")
     jobs_per_week = st.slider(
-        "Jobs fleet can finish this week",
+        "Jobs contractors can finish this week",
         1,
         max(1, total_potential),
         min(6, max(1, total_potential)),
@@ -337,19 +342,19 @@ m5.metric(
 # ==========================================
 tab_map, tab_queue, tab_tenant, tab_price, tab_audit = st.tabs(
     [
-        "🗺️ [ GEOSPATIAL MAP ]",
-        "📋 [ DISPATCH QUEUE ]",
-        "🗣️ [ WHY IS MY REPAIR HERE? ]",
-        "⚖️ [ PRICE OF EQUITY ]",
-        "📜 [ AUDIT LOG ]",
+        "🗺️ [ ROUTE & DISPATCH MAP ]",
+        "📋 [ PRIORITY WORK ORDERS ]",
+        "🗣️ [ TENANT TRANSPARENCY PORTAL ]",
+        "⚖️ [ FAIRNESS VS. COST TRADEOFF ]",
+        "📜 [ DECISION AUDIT TRAIL ]",
     ]
 )
 
 # ------------------------------------------------------------------
-# TAB 1: INTERACTIVE GEOSPATIAL MAP (Visualizing the Equity Gap)
+# TAB 1: INTERACTIVE ROUTE & DISPATCH MAP
 # ------------------------------------------------------------------
 with tab_map:
-    st.markdown("### `[ GEOSPATIAL ROUTING ] Visualizing the Territory Equity Gap`")
+    st.markdown("### `[ ROUTE & DISPATCH MAP ] Visualizing the Regional Access & Equity Gap`")
     st.caption(
         "Public housing maintenance is inherently spatial. Compare the cheapest-trip-first route "
         "(clustering around Darwin) against the EquiTriage route (reaching remote outback communities like Wadeye and Tennant Creek)."
@@ -359,24 +364,24 @@ with tab_map:
     with c_map_mode:
         map_engine = st.radio(
             "Map Engine:",
-            ["🗺️ Geographic Map (OpenStreetMap)", "🌐 3D Tactical Deck.gl (Pydeck)"],
+            ["🗺️ Geographic Map (OpenStreetMap)", "🌐 3D Territory Overview (Pydeck)"],
             horizontal=False,
         )
     with c_map_ctrl1:
         route_display = st.radio(
             "Route Overlay:",
-            ["Both (Comparison)", "EquiTriage Only", "Efficiency Only", "Pins Only"],
+            ["Route Comparison (Efficiency vs. Equity)", "EquiTriage (Fairness Priority)", "Cheapest Trip Only", "Community Locations Only"],
             horizontal=True,
         )
     with c_map_ctrl2:
-        arc_style = st.toggle("3D Arcs (Deck.gl)", value=True)
+        arc_style = st.toggle("Show Travel Corridors (3D Flight Paths)", value=True)
 
     route_key = "both"
-    if route_display == "EquiTriage Only":
+    if route_display == "EquiTriage (Fairness Priority)":
         route_key = "equity"
-    elif route_display == "Efficiency Only":
+    elif route_display == "Cheapest Trip Only":
         route_key = "efficiency"
-    elif route_display == "Pins Only":
+    elif route_display == "Community Locations Only":
         route_key = "none"
 
     geo_df = build_geospatial_dataframe(scored, jobs_per_week)
@@ -416,10 +421,10 @@ with tab_map:
     )
 
 # ------------------------------------------------------------------
-# TAB 2: DISPATCH QUEUE + CONSOLE
+# TAB 2: PRIORITY WORK ORDERS + CONSOLE
 # ------------------------------------------------------------------
 with tab_queue:
-    st.markdown("### `[ QUEUE ] Deterministic Priority Order`")
+    st.markdown("### `[ PRIORITY WORK ORDERS ] Scheduled Dispatch Order`")
     st.caption("Shift ▲ = moved up compared with a cheapest-trip-first list.")
 
     # Format queue view
@@ -455,7 +460,7 @@ with tab_queue:
     ticket_ids = scored.ticket_id.tolist()
 
     with col_left:
-        st.markdown("### `[ META-SYNTHESIZER ] Triage Inspector`")
+        st.markdown("### `[ WORK ORDER INSPECTOR ] Root Cause & Decision Breakdown`")
         chosen = st.selectbox("Inspect Ticket:", ticket_ids, key="console_ticket")
         row = scored.loc[scored.ticket_id == chosen].iloc[0]
 
@@ -464,14 +469,14 @@ with tab_queue:
             st.markdown(f"**Status:** Waiting {int(row.days_waiting)} days | **Category:** {row.category.title()}")
             st.markdown(f"**Request:** *\"{row.text}\"*")
 
-        # RAG Context Box
+        # Property Maintenance History Box
         with st.container(border=True):
-            st.markdown("`[ RAG ASSET MAINTENANCE HISTORY ]`")
+            st.markdown("`[ PROPERTY MAINTENANCE HISTORY ]`")
             hist_str = row.get("history_text", "No prior work orders on file.")
             st.text(hist_str)
             if getattr(row, "is_chronic", False):
                 st.markdown(
-                    f"<span class='badge-chronic'>CHRONIC FAILURE DETECTED: {row.chronic_prob:.0%} recurrence confidence. Deterioration urgency boosted by +{(row.chronic_mult - 1):.0%}.</span>",
+                    f"<span class='badge-chronic'>REPEAT FAILURE RISK DETECTED: {row.chronic_prob:.0%} recurrence confidence. Deterioration urgency boosted by +{(row.chronic_mult - 1):.0%}.</span>",
                     unsafe_allow_html=True,
                 )
 
@@ -510,24 +515,24 @@ with tab_queue:
                 _record("ACCEPT_EFFICIENCY", "Efficiency ranking accepted")
 
 # ------------------------------------------------------------------
-# TAB 3: TENANT-FACING "WHY"
+# TAB 3: TENANT TRANSPARENCY
 # ------------------------------------------------------------------
 with tab_tenant:
-    st.markdown("### `[ TENANT ] Plain-Language Decision Transparency`")
-    st.caption("A plain-language explanation coordinators can read over the phone or SMS to tenants, generated directly from deterministic score components.")
+    st.markdown("### `[ TENANT TRANSPARENCY ] Plain-Language Repair Scheduling Explanation`")
+    st.caption("A plain-language explanation housing coordinators can read over the phone or SMS to tenants, generated directly from deterministic score components.")
     tenant_ticket = st.selectbox("Tenant's Ticket ID:", scored.ticket_id.tolist(), key="tenant_ticket")
     trow = scored.loc[scored.ticket_id == tenant_ticket].iloc[0]
     with st.container(border=True):
         st.text(tenant_answer(trow, scored, policy))
 
 # ------------------------------------------------------------------
-# TAB 4: PRICE OF EQUITY & TRIP BUNDLING
+# TAB 4: FAIRNESS VS. COST TRADEOFF & TRIP BUNDLING
 # ------------------------------------------------------------------
 with tab_price:
-    st.markdown("### `[ TRADE-OFF & RECOVERY ] Intelligent Trip Bundling & Price of Equity`")
+    st.markdown("### `[ FAIRNESS VS. COST TRADEOFF ] Smart Job Bundling & Avoided Travel Savings`")
     st.caption(
-        f"Fleet Capacity: {jobs_per_week} primary runs this week. "
-        "Observe how Intelligent Trip Bundling recovers travel efficiency when remote runs are scheduled."
+        f"Contractor Capacity: {jobs_per_week} primary runs this week. "
+        "Observe how Smart Job Bundling recovers travel efficiency when remote runs are scheduled."
     )
 
     poe = price_of_equity(scored, jobs_per_week, policy)
@@ -560,7 +565,7 @@ with tab_price:
     )
 
     st.markdown("---")
-    st.markdown("### `[ DISPATCH MANIFEST ] Piggybacked Work Orders on Scheduled Runs`")
+    st.markdown("### `[ DISPATCH MANIFEST ] Same-Community Bundled Jobs on Scheduled Runs`")
     st.caption(
         "When an urgent Tier 0 or high-equity job triggers a remote trip (e.g., 420 km to Wadeye), "
         "the algorithm appends all overdue and lower-tier jobs at that exact community. Marginal travel = 0 km."
@@ -569,10 +574,10 @@ with tab_price:
     st.dataframe(manifest_df, width="stretch", hide_index=True)
 
 # ------------------------------------------------------------------
-# TAB 5: AUDIT LOG
+# TAB 5: DECISION AUDIT TRAIL
 # ------------------------------------------------------------------
 with tab_audit:
-    st.markdown("### `[ AUDIT TRAIL ] Immutable Record of Human Discretion`")
+    st.markdown("### `[ DECISION AUDIT TRAIL ] Immutable Record of Human Discretion & Policy Compliance`")
     if AUDIT_LOG.exists():
         entries = [
             json.loads(line)

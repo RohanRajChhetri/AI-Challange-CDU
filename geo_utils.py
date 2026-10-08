@@ -10,33 +10,50 @@ import pydeck as pdk
 DARWIN_DEPOT = {
     "name": "Darwin Central Fleet Depot",
     "location": "Darwin (Depot)",
-    "lat": -12.4634,
-    "lon": 130.8456,
+    "lat": -12.4450,
+    "lon": 130.8500, 
 }
 
-# Authentic coordinates for Northern Territory communities
+
 NT_COMMUNITY_COORDS = {
-    "darwin": (-12.4634, 130.8456),
-    "darwin city": (-12.4634, 130.8456),
-    "casuarina": (-12.3735, 130.8800),
-    "nightcliff": (-12.3833, 130.8500),
-    "berrimah": (-12.4333, 130.9333),
-    "palmerston": (-12.4859, 130.9833),
+    "darwin": (-12.4580, 130.8430),       
+    "darwin city": (-12.4580, 130.8430),
+    "casuarina": (-12.3735, 130.8800),       
+    "nightcliff": (-12.3780, 130.8600),     
+    "berrimah": (-12.4333, 130.9333),         
+    "palmerston": (-12.4859, 130.9833),       
     "batchelor": (-13.0667, 131.0167),
     "adelaide river": (-13.2403, 131.1075),
     "pine creek": (-13.8236, 131.8264),
     "katherine": (-14.4652, 132.2635),
     "jabiru": (-12.6711, 132.8364),
-    "wadeye": (-14.2386, 130.0161),
-    "maningrida": (-12.0575, 134.2347),
+    "wadeye": (-14.2380, 129.5260),          
+    "port keats": (-14.2380, 129.5260),
+    "maningrida": (-12.0575, 134.2347),      
     "tennant creek": (-19.6481, 134.1906),
     "alice springs": (-23.6980, 133.8807),
     "yuendumu": (-22.2536, 131.7944),
     "papunya": (-23.2056, 131.9056),
     "kintore": (-23.2847, 128.3078),
-    "nhulunbuy": (-12.1822, 136.7806),
+    "nhulunbuy": (-12.1825, 136.7800),
     "yirrkala": (-12.2533, 136.8867),
-    "groote eylandt": (-13.8492, 136.4194),
+    "groote eylandt": (-13.8447, 136.4192),   
+    "alyangula": (-13.8447, 136.4192),
+    "daly river": (-13.7547, 130.7078),
+    "nauiyu": (-13.7547, 130.7078),
+    "gunbalanya": (-12.3278, 133.0500),
+    "oenpelli": (-12.3278, 133.0500),
+    "ramingining": (-12.3561, 134.9083),
+    "galiwinku": (-12.0236, 135.5683),
+    "elcho island": (-12.0236, 135.5683),
+    "milingimbi": (-12.0964, 134.8967),
+    "wurrumiyanga": (-11.7583, 130.6306),
+    "tiwi islands": (-11.7583, 130.6306),
+    "ngukurr": (-14.7333, 134.7333),
+    "borroloola": (-16.0711, 136.3072),
+    "lajamanu": (-18.3333, 130.6333),
+    "kalkarindji": (-17.4333, 130.8333),
+    "hermannsburg": (-23.9528, 132.7778),
 }
 
 
@@ -83,15 +100,34 @@ def build_geospatial_dataframe(scored_df: pd.DataFrame, jobs_per_week: int) -> p
     df["lat"] = [c[0] for c in coords]
     df["lon"] = [c[1] for c in coords]
     
-    # Jitter identical coordinates slightly so multiple community tickets can be seen
+    # Safe street-level residential micro-offsets (~80-120m lot separation)
+    # For coastal communities (Darwin, Nightcliff, Wadeye), step strictly INLAND so pins NEVER enter water
+    INLAND_VECTORS = {
+        "darwin": (0.0010, 0.0008),      # Step northeast towards Stuart Park
+        "darwin city": (0.0010, 0.0008),
+        "nightcliff": (0.0008, 0.0012),   # Step east/northeast towards Millner
+        "wadeye": (0.0006, 0.0012),       # Step east inland away from coast
+        "port keats": (0.0006, 0.0012),
+        "maningrida": (-0.0008, 0.0012),  # Step southeast inland
+    }
+
     counts = {}
     for idx, row in df.iterrows():
         key = (row["lat"], row["lon"])
         count = counts.get(key, 0)
         counts[key] = count + 1
         if count > 0:
-            df.at[idx, "lat"] = row["lat"] + 0.012 * count * (1 if count % 2 == 0 else -1)
-            df.at[idx, "lon"] = row["lon"] + 0.015 * count * (1 if count % 3 == 0 else -1)
+            clean_loc = clean_location_name(row["location"])
+            if clean_loc in INLAND_VECTORS:
+                v_lat, v_lon = INLAND_VECTORS[clean_loc]
+                df.at[idx, "lat"] = row["lat"] + v_lat * count
+                df.at[idx, "lon"] = row["lon"] + v_lon * count
+            else:
+                # Standard inland community micro-offset (~100m street dispersion)
+                d_lat = 0.0010 * count * (1 if count % 2 == 1 else -1)
+                d_lon = 0.0010 * count * (1 if count % 3 == 0 else -1)
+                df.at[idx, "lat"] = row["lat"] + d_lat
+                df.at[idx, "lon"] = row["lon"] + d_lon
 
     df["color"] = df["days_waiting"].apply(wait_time_color)
     df["radius"] = df["days_waiting"].apply(lambda d: max(14000, min(45000, int(15000 + d * 500))))
@@ -136,7 +172,7 @@ def generate_route_links(geo_df: pd.DataFrame, route_type: str = "both") -> pd.D
                 "location": row["location"],
                 "distance_km": row["distance_km"],
                 "distance_km_str": row.get("distance_km_str", f"{row['distance_km']:.0f} km"),
-                "category": f"Efficiency Corridor ({row['category'].title()})",
+                "category": row["category"].title(),
                 "days_waiting_str": row.get("days_waiting_str", f"{int(row['days_waiting'])} days"),
                 "safety_prob_str": row.get("safety_prob_str", "N/A"),
                 "urgency_str": row.get("urgency_str", "N/A"),
@@ -163,7 +199,7 @@ def generate_route_links(geo_df: pd.DataFrame, route_type: str = "both") -> pd.D
                 "location": row["location"],
                 "distance_km": row["distance_km"],
                 "distance_km_str": row.get("distance_km_str", f"{row['distance_km']:.0f} km"),
-                "category": f"EquiTriage Corridor ({row['category'].title()})",
+                "category": row["category"].title(),
                 "days_waiting_str": row.get("days_waiting_str", f"{int(row['days_waiting'])} days"),
                 "safety_prob_str": row.get("safety_prob_str", "N/A"),
                 "urgency_str": row.get("urgency_str", "N/A"),
@@ -270,23 +306,23 @@ def build_pydeck_chart(
 
     tooltip = {
         "html": """
-        <div style="font-family: 'Courier New', Courier, monospace; font-size: 11px; line-height: 1.35; color: #FFF; width: 310px; max-width: 320px;">
-            <div style="color: #FFBF00; font-weight: bold; font-size: 13px; border-bottom: 1px solid #FFBF00; padding-bottom: 4px; margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center;">
-                <span>📍 {location}</span>
-                <span style="color: #AAA; font-weight: normal; font-size: 10px;">{distance_km_str}</span>
+        <div style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 11px; line-height: 1.4; color: #FFF; width: 100%; box-sizing: border-box;">
+            <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 12px; border-bottom: 1px solid rgba(255, 191, 0, 0.5); padding-bottom: 6px; margin-bottom: 8px;">
+                <span style="color: #FFBF00; font-weight: 700; font-size: 13px; letter-spacing: 0.2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">📍 {location}</span>
+                <span style="color: #9CA3AF; font-size: 11px; font-weight: 500; white-space: nowrap; margin-right: 2px;">{distance_km_str}</span>
             </div>
             
-            <div style="background: rgba(255, 191, 0, 0.12); border-left: 3px solid #FFBF00; padding: 6px 8px; margin-bottom: 6px; font-size: 11px; color: #FFF; line-height: 1.35;">
-                <b style="color: #FFBF00;">DESCRIPTION:</b><br/>{clean_description}
+            <div style="background: rgba(255, 191, 0, 0.08); border-left: 3px solid #FFBF00; padding: 6px 10px; margin-bottom: 8px; font-size: 11px; color: #E5E7EB; line-height: 1.4; border-radius: 0 4px 4px 0; box-sizing: border-box;">
+                <b style="color: #FFBF00; font-size: 10px; letter-spacing: 0.5px;">DESCRIPTION:</b><br/>{clean_description}
             </div>
 
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 3px 6px; font-size: 10.5px; color: #BBB;">
-                <div><b>Ticket:</b> <code>{ticket_id}</code></div>
-                <div><b>Issue:</b> {category}</div>
-                <div><b>Wait:</b> <span style="color: #FFBF00; font-weight: bold;">{days_waiting_str}</span></div>
-                <div><b>Safety:</b> {safety_prob_str}</div>
-                <div><b>Policy Rank:</b> <b style="color: #FFBF00;">#{rank}</b></div>
-                <div><b>Cheapest Rank:</b> #{rank_efficiency}</div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 5px 10px; font-size: 11px; color: #9CA3AF;">
+                <div style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"><b style="color: #D1D5DB;">Ticket:</b> <code style="color: #F3F4F6; background: rgba(255,255,255,0.06); padding: 1px 4px; border-radius: 2px; font-family: monospace;">{ticket_id}</code></div>
+                <div style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"><b style="color: #D1D5DB;">Issue:</b> <span style="color: #F3F4F6;">{category}</span></div>
+                <div style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"><b style="color: #D1D5DB;">Wait:</b> <span style="color: #FFBF00; font-weight: 600;">{days_waiting_str}</span></div>
+                <div style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"><b style="color: #D1D5DB;">Safety:</b> <span style="color: #F3F4F6;">{safety_prob_str}</span></div>
+                <div style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"><b style="color: #D1D5DB;">Policy Rank:</b> <b style="color: #FFBF00;">#{rank}</b></div>
+                <div style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"><b style="color: #D1D5DB;">Cheapest Rank:</b> <span style="color: #F3F4F6;">#{rank_efficiency}</span></div>
             </div>
         </div>
         """,
@@ -294,14 +330,17 @@ def build_pydeck_chart(
             "top": "100%",
             "backgroundColor": "#121212",
             "color": "#FFFFFF",
+            "fontFamily": "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
             "fontSize": "11px",
-            "padding": "8px 10px",
-            "borderRadius": "4px",
+            "padding": "10px 14px",
+            "borderRadius": "6px",
             "border": "1px solid #FFBF00",
             "boxShadow": "0 8px 24px rgba(0, 0, 0, 0.95)",
             "zIndex": "99999999",
             "pointerEvents": "none",
-            "maxWidth": "330px",
+            "boxSizing": "border-box",
+            "width": "320px",
+            "maxWidth": "320px",
             "wordWrap": "break-word",
         }
     }
