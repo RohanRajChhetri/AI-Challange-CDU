@@ -1,0 +1,51 @@
+ticket_id,property_id,location,distance_km,days_waiting,text
+CYC-001,NT-DAR-201,Nightcliff,9,1,Category 2 wind gust peeled three Colorbond roof sheets off front bedroom. Heavy rain leaking directly into bedroom and soaking ceiling batts.
+CYC-002,NT-CAS-202,Casuarina,6,1,Fallen African mahogany branch sheared overhead service mains into house. Live electrical wire hanging across driveway fence.
+CYC-003,NT-PAL-203,Palmerston,18,1,Internal ceiling plasterboard collapsed into hallway under weight of accumulated stormwater from overflowing roof valley. Power isolated.
+CYC-004,NT-DAR-204,Darwin City,4,2,Stormwater surcharge backing up through ground-floor laundry and bathroom floor drains. 50mm standing water across living room.
+CYC-005,NT-BER-205,Berrimah,14,1,"Solar hot water tank frame on roof twisted and displaced by wind. High-pressure copper supply pipe sheared, water gushing onto roof."
+CYC-006,NT-CAS-206,Casuarina,7,2,"Louvre window frames blown inwards in kitchen during storm squall. Broken glass inside, water driven across electrical appliances."
+CYC-007,NT-PAL-207,Palmerston,19,1,External meter box door torn off and water driving directly into main fuses. Tenant reports loud crackling and arcing sparks.
+CYC-008,NT-DAR-208,Nightcliff,10,2,Rear verandah corrugated iron awning ripped away from fascia beam. Raw metal edges flapping violently against gas bottle line.
+CYC-009,NT-PAL-209,Palmerston,20,1,Major stormwater ingress around front entry door frame. Carpet and structural timber skirting waterlogged and lifting.
+CYC-010,NT-CAS-210,Casuarina,6,2,Downpipe severed by fallen tree limb. Concentrated roof discharge pooling against concrete footings and entering subfloor.
+CYC-011,NT-DAR-211,Darwin City,5,2,Water pouring from light fixture in central lounge room after roof flashing failure. Light switch causing tingling sensation.
+CYC-012,NT-PAL-212,Palmerston,18,3,Storm wind forced rain under eaves into wall cavity. Mould blooming and plasterboard softened around power points.
+CYC-013,NT-BAT-213,Batchelor,98,1,Tree fallen across perimeter security fence and crushing external wastewater inspection riser pipe. Sewage leaking into yard.
+CYC-014,NT-ADL-214,Adelaide River,112,2,Flash flooding penetrated under back sliding door. 75mm silt and water across rear two bedrooms. Need emergency water extraction.
+CYC-015,NT-PIN-215,Pine Creek,225,2,Roof ridge capping dislodged along entire length of house. Active waterfall leaking into roof space and bedroom ceilings.
+CYC-016,NT-KAT-216,Katherine,315,1,Katherine River catchment storm runoff overwhelmed back stormwater gully. Water rising towards power outlets on lower floor.
+CYC-017,NT-KAT-217,Katherine,318,2,"Large gum tree branch smashed through front carport roof, pinning vehicle and bending structural steel stanchion."
+CYC-018,NT-JAB-218,Jabiru,255,2,Severe tropical downpour penetrated split system AC wall penetrations. Water running down inside electrical wiring channel.
+CYC-019,NT-WAD-219,Wadeye,420,1,"Coastal storm surge wind gust lifted rear roof section. Rain entering kitchen, stove and circuit breaker submerged."
+CYC-020,NT-DAR-220,Darwin City,4,1,"Roof gutter collapsed under extreme tropical rain weight, pulling down timber fascia and exposing electrical conduits."
+CYC-021,NT-CAS-221,Casuarina,7,2,Water ingress through roof has caused large bubble in ceiling paint directly over child bedroom bunk bed. Sagging severely.
+CYC-022,NT-PAL-222,Palmerston,19,2,"Front security door frame warped and jammed shut by storm wind pressure. Main exit completely blocked, tenant cannot exit."
+CYC-023,NT-DAR-223,Nightcliff,10,1,High winds snapped external bathroom ventilation cowl. Rain pouring straight down through exhaust fan into shower recess.
+CYC-024,NT-BER-224,Berrimah,14,2,Underground drain pipe collapsed during saturation event. Sump overflowing into adjacent house storage room.
+CYC-025,NT-CAS-225,Casuarina,6,3,"Rear verandah post rotted footings dislodged during storm. Roof corner sagging 150mm, risk of immediate collapse."
+CYC-026,NT-DAR-226,Darwin City,3,1,Electrical sub-board humming loudly and smoking after water dripped onto main breaker from ceiling screw penetration.
+CYC-027,NT-PAL-227,Palmerston,17,2,Driveway culvert blocked with storm debris. Sheet flow water entering under front sliding doors into living room.
+CYC-028,NT-BAT-228,Batchelor,98,2,Kitchen ceiling plaster sheet dropped 100mm with active water dripping onto food prep benchtop.
+CYC-029,NT-KAT-229,Katherine,320,1,Water supply line to external laundry ripped from wall by fallen timber fence. Mains water shut off at street.
+CYC-030,NT-DAR-230,Nightcliff,9,1,Flying tree branch shattered living room window. Wind driving torrential rain across internal floor and electronics.
+CYC-031,NT-CAS-231,Casuarina,8,2,"Roof valley gutter clogged with cyclone debris, backing water up under tiles and into roof insulation."
+CYC-032,NT-PAL-232,Palmerston,18,2,External safety isolation switch filled with rainwater. Circuit breaker trips immediately when engaged.
+CYC-033,NT-ADL-233,Adelaide River,112,3,Septic tank inspection lid dislodged by overland flood waters. Mud and surface runoff draining into septic chamber.
+CYC-034,NT-PIN-234,Pine Creek,225,1,"Verandah roof corrugated iron sheet peeling up at edge, screeching and banging against chimney in wind."
+CYC-035,NT-JAB-235,Jabiru,255,3,Heavy rain penetration through ceiling above switchboard. Power completely dead throughout property.
+CYC-036,NT-DAR-236,Darwin City,4,1,"Storm wind blew laundry door off hinges. Door frame split, water blowing into interior hallway."
+CYC-037,NT-PAL-237,Palmerston,19,2,Hot water heater storage cylinder knocked off concrete pad by fallen tree. Pipe connection snapped and leaking.
+CYC-038,NT-CAS-238,Casuarina,6,1,Living room ceiling bowing downwards with heavy pool of water above. Tenant has evacuated room fearing collapse.
+CYC-039,NT-DAR-239,Nightcliff,10,2,Stormwater grates blocked by palm fronds. Yard completely submerged and water lapping at floor level threshold.
+CYC-040,NT-KAT-240,Katherine,315,2,Bedroom louvres shattered by flying roof tile from neighbouring property. Torrential rain soaking mattress and floor.
+CYC-041,NT-BER-241,Berrimah,14,1,Stormwater ponding against foundation wall. Water seeping through masonry into dining room skirting.
+CYC-042,NT-DAR-242,Darwin City,5,3,Exhaust ducting on roof displaced. Rain entering kitchen rangehood and dripping onto gas cooktop.
+CYC-043,NT-PAL-243,Palmerston,20,1,Ceiling fan in bedroom sparking after water penetrated roof cavity and dripped through motor housing.
+CYC-044,NT-CAS-244,Casuarina,7,2,"Cyclone wind sheared TV antenna from roof, puncturing two holes through iron roof sheets above master bedroom."
+CYC-045,NT-BAT-245,Batchelor,98,1,"Rainwater gutter overflowed behind eaves board, causing extensive water saturation of ceiling insulation."
+CYC-046,NT-ADL-246,Adelaide River,112,2,"Corrugated roof sheets loose on outbuilding storage shed. Sheets lifting 300mm in gusts, hazard to tenants."
+CYC-047,NT-DAR-247,Nightcliff,9,1,Main water meter assembly damaged by uprooted tree. High-pressure town water spraying across footpath.
+CYC-048,NT-PAL-248,Palmerston,18,3,Water dripping steadily from screw holes in hallway smoke alarm. Smoke alarm sounding continuously.
+CYC-049,NT-KAT-249,Katherine,315,2,"Severe wind damaged roof ventilator (whirlybird), leaving open 350mm hole with torrential water pouring inside."
+CYC-050,NT-PIN-250,Pine Creek,225,1,Downpipe dislodged at top elbow. Concentrated roof cascade eroding foundation soil under rear bedroom corner.

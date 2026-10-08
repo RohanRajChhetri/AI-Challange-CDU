@@ -1,0 +1,92 @@
+{
+  "NT-WAD-102": [
+    {
+      "days_ago": 18,
+      "category": "plumbing",
+      "summary": "Plumber snaked main sewer inspection riser and cleared root intrusion causing toilet backup.",
+      "resolution": "Temporary clearance achieved; advised main earthenware drainage line requires camera inspection."
+    },
+    {
+      "days_ago": 42,
+      "category": "plumbing",
+      "summary": "Tenant reported slow drainage and gurgling sounds from bathroom shower floor waste.",
+      "resolution": "Chemical treatment applied; line cleared."
+    }
+  ],
+  "NT-CAS-101": [
+    {
+      "days_ago": 21,
+      "category": "electrical",
+      "summary": "Safety switch tripped intermittently under air conditioner load. Sub-board inspected.",
+      "resolution": "Reset circuit breaker, tightened loose neutral link on busbar."
+    },
+    {
+      "days_ago": 54,
+      "category": "electrical",
+      "summary": "Tenant reported scorched smell from hallway double power point.",
+      "resolution": "Replaced burnt GPO socket plate."
+    }
+  ],
+  "NT-DAR-107": [
+    {
+      "days_ago": 15,
+      "category": "electrical",
+      "summary": "Tenant reported faint electrical humming from kitchen wall behind fridge cavity.",
+      "resolution": "Insulation resistance test completed; intermittent fault suspected in concealed wiring."
+    }
+  ],
+  "NT-JAB-106": [
+    {
+      "days_ago": 28,
+      "category": "plumbing",
+      "summary": "Split-system aircon condensate tray overflowing onto internal plasterboard wall.",
+      "resolution": "Flushed algae buildup from 19mm drain hose."
+    },
+    {
+      "days_ago": 72,
+      "category": "structural",
+      "summary": "Plasterboard swelling behind living room air conditioning unit.",
+      "resolution": "Repaired damp patch with joint compound; advised condensate re-routing."
+    }
+  ],
+  "NT-BAT-108": [
+    {
+      "days_ago": 25,
+      "category": "plumbing",
+      "summary": "Water meter creeping forward with internal fixtures closed. Suspected line weep.",
+      "resolution": "Tightened external brass tap fitting; tenant asked to monitor usage."
+    }
+  ],
+  "NT-NIG-109": [
+    {
+      "days_ago": 60,
+      "category": "pest",
+      "summary": "Mud tubes identified along external foundation brick veneer perimeter.",
+      "resolution": "Surface spray barrier applied by pest contractor."
+    }
+  ],
+  "NT-KAT-103": [
+    {
+      "days_ago": 90,
+      "category": "structural",
+      "summary": "Front wooden entry steps showing dry rot and loose stringer bolt.",
+      "resolution": "Temporary timber brace installed pending stair flight replacement."
+    }
+  ],
+  "NT-TKT-103": [
+    {
+      "days_ago": 20,
+      "category": "plumbing",
+      "summary": "Low water pressure reported at external yard standpipe. Damp soil near meter.",
+      "resolution": "Turned off isolation valve and tightened compression fitting."
+    }
+  ],
+  "NT-TKT-104": [
+    {
+      "days_ago": 30,
+      "category": "pest",
+      "summary": "Mosquito intrusion reported through bedroom window.",
+      "resolution": "Patch mesh applied over tear; frame noted as warped."
+    }
+  ]
+}

@@ -1,146 +1,122 @@
-# EquiTriage: Equity-Aware Housing Maintenance Dispatch System
+# EquiTriage: Equity-Aware Housing Maintenance Dispatch & Logistics Engine
 
 ## Overview
 
-EquiTriage is a decision-support system for housing maintenance dispatch that combines AI-powered signal extraction with explicit equity-aware policy controls. The system helps maintenance coordinators prioritize repair tickets while making equity trade-offs visible and controllable.
+**EquiTriage** is an autonomous decision-support and dispatch engine for public housing maintenance across the Northern Territory (NT). It bridges the gap between a simple "smart prioritization list" and a real-world **spatial logistics engine**, uniting **Laya AI signal extraction**, **context-aware RAG asset history**, **interactive 3D geospatial routing**, and **intelligent trip bundling**.
 
-## Key Features
-
-- **AI Signal Extraction**: Uses the Laya model to automatically categorize maintenance requests (plumbing, electrical, structural, pest, other) and assess safety hazards and deterioration risks from free-text descriptions
-- **Equity-Aware Prioritization**: Balances efficiency (cheapest trip first) with equity considerations (distance, wait times) through adjustable policy sliders
-- **Transparent Decision Making**: Every ranking decision is explainable, showing exactly how equity adjustments affect the queue
-- **Human-in-the-Loop Review**: Flags ambiguous cases for human review when the AI is uncertain
-- **Audit Trail**: Logs all human decisions with justifications for accountability and transparency
-- **Price of Equity Analysis**: Quantifies the trade-off between efficiency and equity in concrete terms (travel distance, jobs completed, etc.)
-
-## How It Works
-
-1. **Signal Extraction (Slow, Cached)**:
-   - The Laya AI model processes each ticket text to extract:
-     - Category (plumbing, electrical, structural, pest, other)
-     - Safety hazard probability (0.0-1.0)
-     - Deterioration risk score (0-3)
-
-2. **Deterministic Scoring (Instant, Auditable)**:
-   - Base urgency combines safety and deterioration signals
-   - Equity multiplier adds priority for wait times and distance
-   - Final score = base urgency × equity multiplier
-   - Two rankings always computed:
-     - Efficiency-only (what "cheapest trip first" would do)
-     - Policy ranking (with equity adjustments applied)
-
-3. **Policy Controls (Visible Sliders)**:
-   - Equity weight (0% = efficiency-only, 100% = distance-blind)
-   - Safety floor (always dispatch above this risk level)
-   - Maximum wait guardrail
-   - Travel cost and remote uplift adjustments
-   - Waiting priority gain per day
-
-## Files in This Repository
-
-- app.py - Streamlit web interface for interactive triage
-- equitriage_engine.py - Core logic for signal extraction, scoring, and policy application
-- main.py - Command-line version that demonstrates the core algorithm
-- maintenance_tickets.csv - Sample maintenance ticket data
-- maintenance_tickets_large.csv - Larger sample dataset
-- audit_log.jsonl - Generated log of human decisions (created when used)
-
-## Installation
-
-1. Clone this repository
-2. Create a virtual environment (optional but recommended):
-   `python -m venv venv
-.\venv\Scripts\activate`
-3. Install dependencies:
-
-   pip install streamlit pandas numpy
-   `
-
-4. Install the Laya model (this appears to be a proprietary model - check with your provider for installation instructions)
-
-## Usage
-
-### Web Interface (Recommended)
-
-`streamlit run app.py`
-
-### Command Line
-
-`python main.py`
-
-## Interpreting the Results
-
-The system shows:
-
-- **Rank**: Current position in the equity-adjusted queue
-- **Ticket**: Ticket ID
-- **Location**: Community/location
-- **Issue**: Categorized problem type
-- **Safety**: Safety probability as percentage
-- **Days Wait**: How long the ticket has been waiting
-- **Score**: Final EquiTriage score
-- **Cost-only Rank**: Where efficiency-only would place it
-- **Shift**: How much equity rules moved the ticket (▲ = moved up, ▼ = moved down)
-- **Tier**: Safety tier (0 = safety override, 1 = ageing guardrail, 2 = normal scoring)
-- **Review**: Whether flagged for human review
-
-## Equity Trade-Off Visualization
-
-The "Price of Equity" tab shows concretely what choosing equity over pure efficiency means:
-
-- How much extra travel distance is incurred
-- How many more remote jobs get completed
-- How communities visited change
-- Waiting times for remaining jobs
-
-## Audit System
-
-All human decisions are logged to udit_log.jsonl with:
-
-- Timestamp
-- Ticket ID
-- System rank vs efficiency rank
-- Decision made (ENFORCE_EQUITY or ACCEPT_EFFICIENCY)
-- Coordinator name
-- Written justification
-- System explanation
-- Policy settings used
-
-## Customization
-
-Adjust the policy sliders in the sidebar to see how different equity preferences affect:
-
-- The dispatch queue
-- Which tickets move up/down
-- The price of equity metrics
-- Explanations for each ticket's position
-
-## Data Requirements
-
-The system expects CSV files with these columns:
-
--     Ticket_id: Unique identifier
-- location: Community/location name
-- distance_km: Distance from depot (kilometers)
-- days_waiting: How many days the ticket has been waiting
--     Text: Free-text description of the maintenance issue
-
-## Design Principles
-
-1. **AI Only Extracts Signals**: The AI model is used solely for extracting structured data from free text, not for making final prioritization decisions
-2. **Deterministic After Extraction**: All scoring and ranking after signal extraction is deterministic math, making it auditable and controllable
-3. **Visible Trade-Offs**: Equity considerations are implemented as visible, adjustable parameters rather than hidden biases
-4. **Explainable Decisions**: Every ranking position can be explained in terms of the underlying components
-5. **Human Ownership**: The system forces humans to own equity trade-offs through explicit controls and required justifications
-
-## Future Enhancements
-
-- Integration with actual dispatch systems
-- Multilingual support for tenant communications
-- Predictive modeling for emergent issues
-- Mobile app for field workers
-- Advanced analytics dashboard for housing managers
+The system makes equity trade-offs visible, controllable, and mathematically accountable to dispatchers, housing authorities, and public record auditors.
 
 ---
 
-\*EquiTriage makes equity in public service delivery visible, controllable, and accountable."
+## 🚀 Key Features
+
+### 1. 🗺️ Interactive Geospatial Mapping (Visualizing the Equity Gap)
+Public housing maintenance in the Northern Territory is fundamentally a spatial problem spanning over 1.3 million square kilometers.
+- **Side-by-Side Dispatch Corridors**: Compares the standard **Efficiency-Only** route (which hovers strictly within 15 km of the Darwin urban core) against the **EquiTriage** route (which pushes out to remote communities like Wadeye, Katherine, and Tennant Creek).
+- **Wait-Time Node Telemetry**: Every community request is plotted as a 3D glowing geospatial node, color-coded by waiting duration:
+  - 🟢 **Mint Green**: Fresh requests (<14 days)
+  - 🟠 **Amber**: Ageing requests (14–45 days)
+  - 🔴 **Glowing Crimson**: Breached SLA guardrails (>45 days)
+- **3D Great-Circle Flight/Travel Arcs**: Visualizes fleet paths connecting the Darwin Fleet Depot directly to community work sites.
+- **Geospatial Reach Telemetry**: Quantifies maximum fleet outreach in kilometers and tracks remote community coverage rates.
+
+### 2. 📦 Intelligent Trip Bundling (Dynamic Cost Recovery)
+Remote dispatch is expensive: driving a crew 420 km to Wadeye or 988 km to Tennant Creek burns substantial fuel and technician hours.
+- **Active Manifest Aggregation**: When EquiTriage schedules a remote trip for an urgent Tier 0 or high-equity job, the engine dynamically scans the queue and bundles all pending low-priority (Tier 2) or overdue repairs in that same community onto the vehicle manifest.
+- **Marginal Travel Cost = 0 km**: Because the crew and vehicle are already on site, resolving secondary jobs incurs zero additional round-trip travel.
+- **Mathematical Cost Recovery**:
+  $$\text{Travel Saved (km)} = \sum_{j \in \text{bundled}} 2 \times \text{Distance}(j)$$
+  $$\text{Fleet Budget Recovered (\$)} = \text{Travel Saved} \times \$1.50/\text{km}$$
+- **The Equity Flex**: Proves mathematically that by bundling overdue lower-priority tasks with emergency runs, the equity model recovers thousands of kilometers of avoided future travel, making fairness far cheaper than expected.
+
+### 3. 🔍 Chronic Issue Detection via RAG (Context-Aware Triage)
+Instead of evaluating work orders in isolation, EquiTriage equips Laya with address-level historical context.
+- **Address & Asset History Ledger**: Groups work orders by property (`property_id` or community lot address) and retrieves the last 3 maintenance requests.
+- **RAG Prompt Augmentation**: Feeds historical repair records directly into the Laya prompt:
+  > *"Context: Plumber snaked main sewer inspection riser 18 days ago. Current request: Toilet overflowing into shower recess."*
+- **Preventative Deterioration Multiplier**: Laya evaluates the typed question `chronic_failure`. When recurring asset failure is identified, a multiplier boosts deterioration urgency:
+  $$\text{Urgency Boost} = 1 + \left(\frac{\text{Chronic Prob} - \text{Floor}}{1 - \text{Floor}}\right) \times \text{Weight}$$
+  Shifts dispatch operations from purely reactive repairs to predictive asset preservation.
+
+### 4. 🌪️ Scenario Simulation Slider (Cyclone Season Stress Test)
+Demonstrates system resilience under real-world Northern Territory weather extremes.
+- **Dynamic Incident Injection**: Sidebar slider allows dispatchers to simulate a Severe Tropical Cyclone or monsoonal surge by injecting up to 50 realistic structural and water damage tickets across the Top End (Darwin, Palmerston, Casuarina, Katherine, Daly River).
+- **Stress-Test Resilience**: Live visualization demonstrates how standard cheapest-trip algorithms abandon remote communities when urban centers are flooded with local storm requests, while EquiTriage's hard safety floors and wait-time guardrails keep critical remote lifelines protected.
+
+---
+
+## 🏛️ System Architecture
+
+```mermaid
+graph TD
+    A[Incoming Maintenance Requests CSV] --> B[Property Asset History Ledger RAG]
+    B --> C[Augmented Text Prompt]
+    C --> D[Laya Decision Model Engine]
+    D --> E[Extracted Signals: Category, Safety Hazard, Deterioration Risk, Chronic Recurrence]
+    E --> F[Deterministic EquiTriage Scoring Core]
+    G[Human Policy Dials: Equity Weight, Safety Floor, Guardrails, Capacity] --> F
+    F --> H[Dynamic Trip Bundling Algorithm]
+    H --> I[Pydeck 3D Geospatial Map]
+    H --> J[Ranked Dispatch Queue & Console]
+    H --> K[Price of Equity & Manifest Recovery]
+    H --> L[Audited Human Decision Trail JSONL]
+```
+
+---
+
+## 📊 Deterministic Scoring & Policy Formulation
+
+1. **Base Urgency**:
+   $$\text{Base Urgency} = (\text{Safety Prob} \times 6.0) + (\text{Effective Deterioration} \times 1.33)$$
+2. **Equity Adjustments**:
+   - $\text{Wait Multiplier} = 1 + \min(1.0, \text{Days Waiting} \times 0.02)$
+   - $\text{Remote Multiplier} = 1 + \left(\frac{\text{Distance}}{100}\right) \times 0.10 \times \text{Equity Weight}$
+   - $\text{Travel Discount} = \left(1 + \frac{0.25 \times \text{Distance}}{100}\right)^{1 - \text{Equity Weight}}$
+3. **Final Policy Score**:
+   $$\text{Final Score} = \frac{\text{Base Urgency} \times \text{Wait Multiplier} \times \text{Remote Multiplier}}{\text{Travel Discount}}$$
+4. **Hard Safety & Guardrail Tiers**:
+   - **Tier 0 (Safety Override)**: $\text{Safety Prob} \ge \text{Safety Floor}$ (always dispatched first; distance cannot delay)
+   - **Tier 1 (Ageing Guardrail)**: $\text{Days Waiting} > \text{Max Wait Days}$ and $\text{Urgency} \ge 2.0$
+   - **Tier 2 (Scored Priority)**: Normal priority scoring
+
+---
+
+## 💻 Running the Application
+
+### 1. Interactive Web Dashboard (Recommended)
+```bash
+streamlit run app.py
+```
+Open [http://localhost:8501](http://localhost:8501) in your browser.
+- Select your dataset from the sidebar (`NT Housing Territory Operations (26 Tickets)`, `New Inflow`, etc.).
+- Click `[ RUN LIVE LAYA TRIAGE ]` to trigger Laya signal extraction and RAG history retrieval.
+- Explore the **Geospatial Map**, **Dispatch Queue**, **Price of Equity**, and test the **Cyclone Simulation Slider**.
+
+### 2. Command-Line Interface
+```bash
+python main.py
+```
+Executes the full pipeline, printing the top dispatch queue, trip bundling manifest, and trade-off metrics.
+
+---
+
+## 📁 Repository Structure
+
+```
+Laya/
+├── app.py                      # Streamlit interactive web console (Pydeck 3D & Folium mapping)
+├── equitriage_engine.py        # Core logic: Laya AI extraction, RAG history lookup, scoring & bundling
+├── geo_utils.py                # Geospatial NT coordinates, Pydeck 3D arcs & Folium map builder
+├── main.py                     # CLI demonstration script
+├── generate_cyclone_catalog.py # Script to generate authentic NT cyclone damage tickets
+├── cache_cyclone_signals.py    # Script to pre-cache Laya signals for cyclone tickets
+│
+└── data/                       # 📂 Dedicated Data Directory
+    ├── nt_housing_operations.csv      # Primary operations dataset (26 authentic NT requests)
+    ├── historical_maintenance.json    # Property maintenance ledger for context-aware RAG
+    ├── cyclone_incident_catalog.csv   # 50 authentic NT cyclone emergency damage tickets
+    ├── cyclone_signals_cache.json     # Pre-cached Laya extractions for 0ms slider response
+    ├── newdata.csv                    # Intake batch (12 tickets)
+    ├── maintenance_tickets.csv        # Baseline minimal demo dataset (4 tickets)
+    └── maintenance_tickets_large.csv  # Historical territory archive (500 tickets)
+```

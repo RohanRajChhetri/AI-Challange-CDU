@@ -2,9 +2,20 @@ from pathlib import Path
 from typing import IO
 
 import pandas as pd
-import math
 
-TICKET_CSV = Path(__file__).with_name("maintenance_tickets.csv")
+DATA_DIR = Path(__file__).parent / "data"
+TICKET_CSV = (
+    DATA_DIR / "nt_housing_operations.csv"
+    if (DATA_DIR / "nt_housing_operations.csv").exists()
+    else Path(__file__).with_name("nt_housing_operations.csv")
+)
+if not TICKET_CSV.exists():
+    TICKET_CSV = (
+        DATA_DIR / "maintenance_tickets.csv"
+        if (DATA_DIR / "maintenance_tickets.csv").exists()
+        else Path(__file__).with_name("maintenance_tickets.csv")
+    )
+
 REQUIRED_TICKET_COLUMNS = {
     "ticket_id",
     "location",
@@ -41,102 +52,49 @@ def load_tickets(source: str | Path | IO[bytes]) -> pd.DataFrame:
 
     return tickets
 
-# ==========================================
-# 3. LAYA QUESTIONS DEFINITION
-# ==========================================
-# Instead of prompting an LLM to generate text, we define strict typed questions.
-laya_questions = {
-    "category": {
-        "type": "choice",
-        "instructions": "Categorize the primary issue in this maintenance request.",
-        "criteria": {
-            "plumbing": "Water, leaks, pipes, or drainage issues",
-            "electrical": "Power, wiring, outlets, or appliance issues",
-            "structural": "Roof, walls, windows, doors, or physical damage",
-            "pest": "Insects, rodents, or animal issues",
-            "other": "Everything else"
-        }
-    },
-    "safety_hazard": {
-        "type": "noul",
-        "instructions": "Does this issue present an immediate physical safety, fire, or severe health hazard to the tenants?"
-    },
-    "deterioration_risk": {
-        "type": "score",
-        "instructions": "Rate the risk of this issue causing significant property damage if left unattended.",
-        "criteria": [
-            "Stable, will not get worse immediately",
-            "Minor deterioration over time",
-            "Will cause significant damage if left for a month",
-            "Imminent failure or catastrophic damage"
-        ]
-    }
-}
 
-# ==========================================
-# 4. THE EQUI-TRIAGE ALGORITHM
-# ==========================================
-def process_tickets(tickets, router):
-    results = []
-    
-    for ticket in tickets:
-        # Laya evaluates the ticket text against our strict questions in a single forward pass (~35ms)
-        laya_response = router.predict(state=ticket["text"], questions=laya_questions)
-        
-        answers = laya_response["answers"]
-        
-        # 1. Extract typed values from Laya
-        category = answers["category"]["choice"]
-        safety_prob = answers["safety_hazard"]["noul"]  # Returns a probability (0.0 to 1.0)
-        # Score returns an index (0 to 3 based on our 4 criteria levels)
-        det_score = answers["deterioration_risk"]["score"] 
-        
-        # 2. Base Urgency (AI extraction of the physical risk)
-        # Weight safety heavily (max 6 points) and deterioration (max 4 points)
-        base_urgency = (safety_prob * 6) + (det_score * 1.33)
-        
-        # 3. Equity Multiplier (The Bias Breaker)
-        # 1.0 is baseline. Add 2% for every day waiting, and 0.1% for every km away.
-        equity_multiplier = 1.0 + (ticket["days_waiting"] * 0.02) + (ticket["distance_km"] * 0.001)
-        
-        # 4. Final EquiTriage Score
-        final_score = base_urgency * equity_multiplier
-        
-        # 5. TRUST TWIST: Human Exception Flagging
-        # We flag ambiguous edge-cases for human review if safety probability sits in the middle (unsure)
-        requires_human_review = 0.4 < safety_prob < 0.6 
-
-        results.append({
-            "Ticket": ticket["ticket_id"],
-            "Location": ticket["location"],
-            "Days Wait": ticket["days_waiting"],
-            "Issue": category.title(),
-            "Safety (Prob)": f"{safety_prob:.2f}",
-            "Base Urgency": round(base_urgency, 2),
-            "Equity Multiplier": round(equity_multiplier, 2),
-            "Final Score": round(final_score, 2),
-            "Human Review": "Yes" if requires_human_review else "No"
-        })
-        
-    return pd.DataFrame(results)
-
-# ==========================================
-# 5. EXECUTION & OUTPUT
-# ==========================================
 if __name__ == "__main__":
-    print("\nRunning EquiTriage Pipeline using Native Laya...")
+    print("\n" + "=" * 70)
+    print("EQUITRIAGE // Public Housing Logistics & Decision Engine (CLI Demonstration)")
+    print("=" * 70)
     print("Loading Laya decision model into memory...")
     from laya import Router
+    from equitriage_engine import (
+        Policy,
+        extract_signals,
+        score_tickets,
+        price_of_equity,
+        compute_manifest_breakdown,
+    )
 
     router = Router(preload=True)
-    df = process_tickets(load_tickets(TICKET_CSV).to_dict("records"), router)
-    
-    # Sort by Final Score (Descending) to simulate the dashboard queue
-    df_sorted = df.sort_values(by="Final Score", ascending=False).reset_index(drop=True)
-    
-    print("\n=== WEEKLY DISPATCH RANKING (EQUITY ADJUSTED) ===")
-    print(df_sorted.to_string())
-    
-    print("\n[!] Notice the Equity Multiplier effect.")
-    print("[!] High distance and high wait times artificially inflate remote ticket scores,")
-    print("[!] breaking the standard urban efficiency feedback loop.")
+    raw_tickets = load_tickets(TICKET_CSV)
+    print(f"Loaded {len(raw_tickets)} authentic NT housing maintenance requests.")
+    print("Running context-aware RAG extraction via Laya AI...")
+
+    signals = extract_signals(raw_tickets, router)
+    policy = Policy(equity_weight=0.55, safety_floor=0.70, max_wait_days=45)
+    scored = score_tickets(signals, policy, jobs_per_week=5)
+
+    print("\n" + "-" * 70)
+    print("TOP DISPATCH MANIFEST (EQUITY-ADJUSTED WITH BUNDLED RUNS):")
+    print("-" * 70)
+    summary_cols = ["rank", "ticket_id", "location", "category", "days_waiting", "tier", "bundle_status", "final_score"]
+    print(scored.head(10)[summary_cols].to_string(index=False))
+
+    print("\n" + "-" * 70)
+    print("INTELLIGENT TRIP BUNDLING & COST RECOVERY MANIFEST:")
+    print("-" * 70)
+    manifest = compute_manifest_breakdown(scored, jobs_per_week=5, policy=policy)
+    print(manifest.to_string(index=False))
+
+    print("\n" + "-" * 70)
+    print("PRICE OF EQUITY (EFFICIENCY-FIRST VS EQUITRIAGE TRADE-OFF):")
+    print("-" * 70)
+    poe = price_of_equity(scored, jobs_per_week=5, policy=policy)
+    print(poe.to_string())
+
+    print("\n" + "=" * 70)
+    print("[OK] Pipeline executed successfully.")
+    print("Run `streamlit run app.py` for the interactive 3D geospatial dashboard.")
+    print("=" * 70 + "\n")
