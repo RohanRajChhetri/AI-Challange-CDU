@@ -2,7 +2,14 @@
 
 ## Overview
 
-**EquiTriage** is an autonomous decision-support and dispatch engine for public housing maintenance across the Northern Territory (NT). It bridges the gap between a simple "smart prioritization list" and a real-world **spatial logistics engine**, uniting **Laya AI signal extraction**, **context-aware RAG asset history**, **interactive 3D geospatial routing**, and **intelligent trip bundling**.
+**EquiTriage** is an autonomous decision-support and dispatch engine for public housing maintenance across the Northern Territory (NT). It bridges the gap between a simple "smart prioritization list" and a real-world **spatial logistics engine**, uniting:
+- **Laya AI signal extraction** (typed zero-shot classification & hazard detection)
+- **Context-aware RAG asset history** (detecting recurring failures and chronic property breakdown)
+- **Multi-depot regional fleet routing** (Darwin, Katherine, Tennant Creek, Alice Springs, Nhulunbuy)
+- **Wet-season road passability matrix** (simulating seasonal river cuts and barge/air logistics)
+- **Trade-constrained smart trip bundling** (plumber, electrician, carpenter, pest control matching)
+- **Field contractor work packet generation** (printable offline run sheets with safety briefings)
+- **Enterprise REST API microservice** (FastAPI) and **comprehensive automated test suite** (pytest)
 
 The system makes equity trade-offs visible, controllable, and mathematically accountable to dispatchers, housing authorities, and public record auditors.
 
@@ -10,38 +17,43 @@ The system makes equity trade-offs visible, controllable, and mathematically acc
 
 ## 🚀 Key Features
 
-### 1. 🗺️ Territory Route & Equity Map (Regional Access & Coverage)
-Public housing maintenance in the Northern Territory is fundamentally a spatial problem spanning over 1.3 million square kilometers.
-- **Side-by-Side Dispatch Corridors**: Compares the standard **Cheapest-Trip-First** route (which hovers strictly within 15 km of the Darwin urban core) against the **EquiTriage** route (which pushes out to remote communities like Wadeye, Katherine, and Tennant Creek).
-- **Wait-Time Node Telemetry**: Every community request is plotted as a 3D glowing geospatial node, color-coded by waiting duration:
-  - 🟢 **Mint Green**: Fresh requests (<14 days)
-  - 🟠 **Amber**: Ageing requests (14–45 days)
-  - 🔴 **Glowing Crimson**: Breached SLA guardrails (>45 days)
-- **3D Flight & Travel Corridors**: Visualizes fleet paths connecting the Darwin Fleet Depot directly to community work sites.
-- **Regional Coverage Reach**: Quantifies maximum contractor outreach in kilometers and tracks remote community service rates.
+### 1. 🏢 Multi-Depot Hub-and-Spoke Logistics
+Maintenance across the NT spans over 1.3 million square kilometers and is staged from regional operations hubs:
+- **Darwin Central Fleet Depot** (Top End, Tiwi Islands)
+- **Katherine Regional Depot** (Big Rivers region: Katherine, Daly River, Pine Creek, Borroloola)
+- **Barkly Regional Depot** (Tennant Creek)
+- **Alice Springs Fleet Depot** (Central Australia: Alice Springs, Yuendumu, Papunya, Kintore, Hermannsburg)
+- **East Arnhem Logistics Hub** (Nhulunbuy, Yirrkala, Groote Eylandt)
+- **Dynamic Routing**: Automatic nearest-depot assignment or coordinator-selected staging hub.
 
-### 2. 📦 Smart Job Bundling (Same-Trip Fuel & Cost Savings)
-Remote dispatch is expensive: driving a crew 420 km to Wadeye or 988 km to Tennant Creek burns substantial fuel and technician hours.
-- **Active Manifest Aggregation**: When EquiTriage schedules a remote trip for an urgent Tier 0 or high-equity job, the engine dynamically scans the queue and bundles all pending low-priority (Tier 2) or overdue repairs in that same community onto the vehicle manifest.
-- **Marginal Travel Cost = 0 km**: Because the crew and vehicle are already on site, resolving secondary jobs incurs zero additional round-trip travel.
-- **Mathematical Cost Recovery**:
-  $$\text{Travel Saved (km)} = \sum_{j \in \text{bundled}} 2 \times \text{Distance}(j)$$
-  $$\text{Fleet Budget Recovered (\$)} = \text{Travel Saved} \times \$1.50/\text{km}$$
-- **The Equity Flex**: Proves mathematically that by bundling overdue lower-priority tasks with emergency runs, the equity model recovers thousands of kilometers of avoided future travel, making fairness far cheaper than expected.
+### 2. 🌧️ Wet Season Road Passability & Access Matrix
+Models Northern Territory wet season monsoonal reality:
+- **River Crossings & Inundation**: Monitors vulnerable river crossings (Cahills Crossing into Gunbalanya, Daly River causeway into Nauiyu, Roper Highway into Ngukurr).
+- **Dynamic Transit Modes**: Automatically switches transit mode to **4WD Heavy Convoy**, **Coastal Barge**, or **Light Aircraft Charter** when road links are cut.
+- **Access Factor**: Adjusts logistical complexity and fleet cost multipliers.
 
-### 3. 🔍 Repeat Repair Detection (Property Maintenance History)
-Instead of evaluating work orders in isolation, EquiTriage equips Laya with address-level historical context.
-- **Address & Asset History Ledger**: Groups work orders by property (`property_id` or community lot address) and retrieves the last 3 maintenance requests.
-- **History Prompt Augmentation**: Feeds historical repair records directly into the Laya model prompt:
-  > *"Context: Plumber snaked main sewer inspection riser 18 days ago. Current request: Toilet overflowing into shower recess."*
-- **Preventative Deterioration Multiplier**: Laya evaluates the typed question `chronic_failure`. When recurring asset failure is identified, a multiplier boosts deterioration urgency:
-  $$\text{Urgency Boost} = 1 + \left(\frac{\text{Chronic Prob} - \text{Floor}}{1 - \text{Floor}}\right) \times \text{Weight}$$
-  Shifts dispatch operations from purely reactive repairs to predictive asset preservation.
+### 3. 🔧 Trade-Constrained Smart Trip Bundling & Shift Capacity
+Remote dispatch requires the right skills and realistic shift budgets:
+- **Trade Skill Matching**: Identifies trade requirements (`Plumber`, `Electrician`, `Carpenter / Builder`, `Pest Specialist`, `General Maintenance`). When an emergency Plumber is dispatched to Wadeye, the vehicle manifest only bundles compatible repairs, preventing trade mismatches.
+- **Labor Shift Ceiling**: Tracks estimated on-site labor hours against a working shift limit (e.g. 12 hours) to avoid overloading remote contractor crews.
+- **Avoided Travel Recovery**: Proves mathematically that bundling compatible jobs at 0 km marginal travel recovers thousands of kilometers in fleet costs:
+  $$\text{Fleet Budget Recovered (\$)} = \sum_{j \in \text{bundled}} 2 \times \text{Distance}(j) \times \$1.50/\text{km}$$
 
-### 4. 🌪️ Extreme Weather Surge Simulation (Monsoon & Cyclone Stress Test)
-Demonstrates system resilience under real-world Northern Territory weather extremes.
-- **Dynamic Incident Injection**: Sidebar slider allows dispatchers to simulate a Severe Tropical Cyclone or monsoonal surge by injecting up to 50 realistic structural and water damage tickets across the Top End (Darwin, Palmerston, Casuarina, Katherine, Daly River).
-- **Stress-Test Resilience**: Live visualization demonstrates how standard cheapest-trip algorithms abandon remote communities when urban centers are flooded with local storm requests, while EquiTriage's hard safety floors and wait-time guardrails keep critical remote lifelines protected.
+### 4. 🚜 Printable Field Contractor Work Packets
+Generates complete, offline-ready work packets for trade contractors heading out into areas without cellular coverage:
+- Destination GPS coordinates & regional depot origin
+- Road access briefing, river flood advisories & transit mode
+- Itemized work orders with prior maintenance history and tenant notes
+- Essential tools and spare parts checklist
+- On-site completion sign-off table
+
+### 5. 🛠️ Work Order Resolution & Active Learning Calibration
+- **Asset Ledger Update**: Coordinators and technicians can mark jobs resolved, appending parts used and resolution summaries directly to `data/historical_maintenance.json`.
+- **AI Calibration Feedback**: Coordinators can calibrate AI categories and safety probabilities with justifications, logging to `data/evaluation_feedback.jsonl` for continuous active learning.
+
+### 6. 🌐 Headless REST API (FastAPI) & Automated Testing (pytest)
+- Decoupled REST microservice in `api.py` exposing endpoints for enterprise housing ERPs (SAP, Salesforce, GovCMS).
+- Robust unit test suite in `tests/test_equitriage.py` verifying deterministic scoring tiers, trade constraints, labor budgets, wet-season passability, and API routes.
 
 ---
 
@@ -49,17 +61,20 @@ Demonstrates system resilience under real-world Northern Territory weather extre
 
 ```mermaid
 graph TD
-    A[Incoming Maintenance Requests CSV] --> B[Property Maintenance History Ledger]
+    A[Incoming Maintenance Requests CSV] --> B[Property Maintenance History Ledger RAG]
     B --> C[Augmented Context Prompt]
     C --> D[Laya AI Decision Model]
-    D --> E[Extracted Signals: Category, Safety Hazard, Deterioration Risk, Repeat Recurrence]
+    D --> E[Extracted Signals: Category, Safety Hazard, Deterioration, Chronic Risk]
     E --> F[Deterministic EquiTriage Scoring Core]
-    G[Human Governance Dials: Equity Weight, Critical Safety Override, Guardrails] --> F
-    F --> H[Smart Job Bundling Algorithm]
-    H --> I[3D Regional Route & Territory Map]
-    H --> J[Scheduled Priority Work Orders]
-    H --> K[Fairness vs. Cost Tradeoff & Travel Savings]
-    H --> L[Audited Human Decision Trail JSONL]
+    G[Multi-Depot Routing & Haversine Distance Engine] --> F
+    H[Wet Season Passability Matrix & Transit Modes] --> F
+    I[Human Governance Dials: Equity, Safety Floor, Guardrails] --> F
+    F --> J[Trade & Capacity-Constrained Bundling Algorithm]
+    J --> K[Interactive 3D / 2D Geospatial Map]
+    J --> L[Scheduled Priority Dispatch Queue]
+    J --> M[Contractor Field Work Order Packets]
+    J --> N[Fairness vs Cost Tradeoff Metrics]
+    J --> O[Audited Decision Trail & AI Calibration Logs]
 ```
 
 ---
@@ -83,20 +98,40 @@ graph TD
 
 ## 💻 Running the Application
 
-### 1. Interactive Web Dashboard (Recommended)
+### 1. Interactive Web Dashboard (Streamlit)
 ```bash
 streamlit run app.py
 ```
 Open [http://localhost:8501](http://localhost:8501) in your browser.
-- Select your dataset from the sidebar (`NT Housing Territory Operations (26 Tickets)`, `New Inflow`, etc.).
-- Click `[ RUN LIVE LAYA TRIAGE ]` to trigger Laya signal extraction and property history retrieval.
-- Explore the **Route & Dispatch Map**, **Priority Work Orders**, **Fairness vs. Cost Tradeoff**, and test the **Extreme Weather Stress Test**.
+- Toggle between **Closest Regional Depot** and specific regional hubs.
+- Test the **Wet Season Monsoon** road flooding switch.
+- Adjust **Trade Skill Matching** and **Max Crew Shift Hours**.
+- Inspect tickets, mark repairs resolved, or download printable **Field Contractor Work Packets**.
 
-### 2. Command-Line Interface
+### 2. Command-Line Interface (CLI)
 ```bash
 python main.py
 ```
-Executes the full pipeline, printing the top dispatch queue, trip bundling manifest, and trade-off metrics.
+Executes the full pipeline, printing the top dispatch manifest with assigned depots, required trades, and bundling recovery.
+
+### 3. REST API Service (FastAPI)
+```bash
+uvicorn api:app --reload --port 8000
+```
+- Interactive Swagger documentation: [http://localhost:8000/docs](http://localhost:8000/docs)
+- Endpoints:
+  - `GET /health`: Health check and depot count
+  - `GET /api/depots`: All NT depot hubs and GPS coordinates
+  - `GET /api/road-conditions`: Seasonal road passability status
+  - `POST /api/triage`: Scores and ranks tickets with deterministic policy
+  - `POST /api/manifest`: Generates vehicle manifests and bundling cost savings
+  - `POST /api/resolve`: Records completed work order into RAG asset history
+  - `POST /api/feedback`: Records coordinator calibration feedback
+
+### 4. Running the Test Suite
+```bash
+pytest tests/test_equitriage.py -v
+```
 
 ---
 
@@ -105,17 +140,23 @@ Executes the full pipeline, printing the top dispatch queue, trip bundling manif
 ```
 Laya/
 ├── app.py                      # Streamlit interactive web console (Pydeck 3D & Folium mapping)
-├── equitriage_engine.py        # Core logic: Laya AI extraction, RAG history lookup, scoring & bundling
-├── geo_utils.py                # Geospatial NT coordinates, Pydeck 3D arcs & Folium map builder
+├── api.py                      # FastAPI REST microservice (Swagger UI, ERP integration)
+├── equitriage_engine.py        # Core logic: Laya AI, scoring, trade bundling, work packet generator
+├── geo_utils.py                # Multi-depot coordinates, haversine engine, wet season road matrix
 ├── main.py                     # CLI demonstration script
-├── generate_cyclone_catalog.py # Script to generate authentic NT cyclone damage tickets
-├── cache_cyclone_signals.py    # Script to pre-cache Laya signals for cyclone tickets
+├── generate_cyclone_catalog.py # Script generating authentic NT cyclone damage tickets
+├── cache_cyclone_signals.py    # Script pre-caching Laya signals for cyclone tickets
+│
+├── tests/
+│   └── test_equitriage.py      # Automated pytest unit test suite
 │
 └── data/                       # 📂 Dedicated Data Directory
     ├── nt_housing_operations.csv      # Primary operations dataset (26 authentic NT requests)
     ├── historical_maintenance.json    # Property maintenance ledger for context-aware RAG
     ├── cyclone_incident_catalog.csv   # 50 authentic NT cyclone emergency damage tickets
     ├── cyclone_signals_cache.json     # Pre-cached Laya extractions for 0ms slider response
+    ├── evaluation_feedback.jsonl      # Coordinator calibration feedback for active learning
+    ├── audit_log.jsonl                # Immutable human decision audit trail
     ├── newdata.csv                    # Intake batch (12 tickets)
     ├── maintenance_tickets.csv        # Baseline minimal demo dataset (4 tickets)
     └── maintenance_tickets_large.csv  # Historical territory archive (500 tickets)

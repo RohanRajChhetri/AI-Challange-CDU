@@ -1,0 +1,16 @@
+# EquiTriage: Dependencies
+# Python 3.10+ recommended
+
+streamlit>=1.35.0
+pandas>=2.1.0
+numpy>=1.26.0
+folium>=0.16.0
+streamlit-folium>=0.20.0
+pydeck>=0.9.0
+fastapi>=0.110.0
+uvicorn>=0.28.0
+pydantic>=2.6.0
+pytest>=8.0.0
+requests>=2.31.0
+laya>=0.3.0
+altair>=5.0.0

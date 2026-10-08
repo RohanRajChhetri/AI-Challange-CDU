@@ -79,7 +79,7 @@ if __name__ == "__main__":
     print("\n" + "-" * 70)
     print("TOP DISPATCH MANIFEST (EQUITY-ADJUSTED WITH BUNDLED RUNS):")
     print("-" * 70)
-    summary_cols = ["rank", "ticket_id", "location", "category", "days_waiting", "tier", "bundle_status", "final_score"]
+    summary_cols = ["rank", "ticket_id", "location", "depot_name", "trade_required", "est_labor_hours", "bundle_status", "final_score"]
     print(scored.head(10)[summary_cols].to_string(index=False))
 
     print("\n" + "-" * 70)

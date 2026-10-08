@@ -1,35 +1,80 @@
-"""Geospatial utilities, Pydeck 3D layers, and Folium map builder for Northern Territory housing dispatch."""
+"""Geospatial utilities, Pydeck 3D layers, and Folium map builder for Northern Territory housing dispatch.
+Supports multi-depot logistics, wet-season road passability matrix, and dynamic corridor routing.
+"""
 from __future__ import annotations
 
+import math
 import re
 import folium
 import pandas as pd
 import pydeck as pdk
 
-# Depot location: Main NT Housing Fleet Depot (Darwin)
-DARWIN_DEPOT = {
-    "name": "Darwin Central Fleet Depot",
-    "location": "Darwin (Depot)",
-    "lat": -12.4450,
-    "lon": 130.8500, 
+# --------------------------------------------------------------------------
+# 1. NT REGIONAL FLEET DEPOTS (Hub-and-Spoke Infrastructure)
+# --------------------------------------------------------------------------
+NT_DEPOTS = {
+    "darwin": {
+        "id": "darwin",
+        "name": "Darwin Central Fleet Depot",
+        "location": "Darwin (Depot HQ)",
+        "region": "Top End",
+        "lat": -12.4450,
+        "lon": 130.8500,
+    },
+    "katherine": {
+        "id": "katherine",
+        "name": "Katherine Regional Depot",
+        "location": "Katherine (Regional Depot)",
+        "region": "Big Rivers",
+        "lat": -14.4652,
+        "lon": 132.2635,
+    },
+    "tennant_creek": {
+        "id": "tennant_creek",
+        "name": "Barkly Regional Depot (Tennant Creek)",
+        "location": "Tennant Creek (Barkly Depot)",
+        "region": "Barkly",
+        "lat": -19.6481,
+        "lon": 134.1906,
+    },
+    "alice_springs": {
+        "id": "alice_springs",
+        "name": "Alice Springs Fleet Depot",
+        "location": "Alice Springs (Central Depot)",
+        "region": "Central Australia",
+        "lat": -23.6980,
+        "lon": 133.8807,
+    },
+    "nhulunbuy": {
+        "id": "nhulunbuy",
+        "name": "East Arnhem Logistics Hub (Nhulunbuy)",
+        "location": "Nhulunbuy (East Arnhem Hub)",
+        "region": "East Arnhem",
+        "lat": -12.1825,
+        "lon": 136.7800,
+    },
 }
 
+DARWIN_DEPOT = NT_DEPOTS["darwin"]
 
+# --------------------------------------------------------------------------
+# 2. NT REMOTE & URBAN COMMUNITY GEOSPATIAL COORDINATES
+# --------------------------------------------------------------------------
 NT_COMMUNITY_COORDS = {
-    "darwin": (-12.4580, 130.8430),       
+    "darwin": (-12.4580, 130.8430),
     "darwin city": (-12.4580, 130.8430),
-    "casuarina": (-12.3735, 130.8800),       
-    "nightcliff": (-12.3780, 130.8600),     
-    "berrimah": (-12.4333, 130.9333),         
-    "palmerston": (-12.4859, 130.9833),       
+    "casuarina": (-12.3735, 130.8800),
+    "nightcliff": (-12.3780, 130.8600),
+    "berrimah": (-12.4333, 130.9333),
+    "palmerston": (-12.4859, 130.9833),
     "batchelor": (-13.0667, 131.0167),
     "adelaide river": (-13.2403, 131.1075),
     "pine creek": (-13.8236, 131.8264),
     "katherine": (-14.4652, 132.2635),
     "jabiru": (-12.6711, 132.8364),
-    "wadeye": (-14.2380, 129.5260),          
+    "wadeye": (-14.2380, 129.5260),
     "port keats": (-14.2380, 129.5260),
-    "maningrida": (-12.0575, 134.2347),      
+    "maningrida": (-12.0575, 134.2347),
     "tennant creek": (-19.6481, 134.1906),
     "alice springs": (-23.6980, 133.8807),
     "yuendumu": (-22.2536, 131.7944),
@@ -37,7 +82,7 @@ NT_COMMUNITY_COORDS = {
     "kintore": (-23.2847, 128.3078),
     "nhulunbuy": (-12.1825, 136.7800),
     "yirrkala": (-12.2533, 136.8867),
-    "groote eylandt": (-13.8447, 136.4192),   
+    "groote eylandt": (-13.8447, 136.4192),
     "alyangula": (-13.8447, 136.4192),
     "daly river": (-13.7547, 130.7078),
     "nauiyu": (-13.7547, 130.7078),
@@ -56,12 +101,108 @@ NT_COMMUNITY_COORDS = {
     "hermannsburg": (-23.9528, 132.7778),
 }
 
+# --------------------------------------------------------------------------
+# 3. WET SEASON PASSABILITY & SEASONAL ROAD ACCESS MATRIX
+# --------------------------------------------------------------------------
+WET_SEASON_ROAD_STATUS = {
+    "gunbalanya": {
+        "status": "IMPASSABLE",
+        "reason": "Cahills Crossing flooded (Alligator River cut); strictly Air/Barge access",
+        "transit_mode": "Light Aircraft / Coastal Barge",
+        "access_factor": 2.2,
+    },
+    "oenpelli": {
+        "status": "IMPASSABLE",
+        "reason": "Cahills Crossing submerged; strictly Air/Barge access",
+        "transit_mode": "Light Aircraft / Coastal Barge",
+        "access_factor": 2.2,
+    },
+    "daly river": {
+        "status": "IMPASSABLE",
+        "reason": "Daly River causeway inundated; Nauiyu community cut by floodwaters",
+        "transit_mode": "Emergency Boat / Helicopter",
+        "access_factor": 2.5,
+    },
+    "nauiyu": {
+        "status": "IMPASSABLE",
+        "reason": "Daly River crossing submerged",
+        "transit_mode": "Emergency Boat / Helicopter",
+        "access_factor": 2.5,
+    },
+    "wadeye": {
+        "status": "RESTRICTED_4WD",
+        "reason": "Unsealed Daly River corridor heavily washed out; 4WD heavy convoy only",
+        "transit_mode": "4WD Heavy Convoy",
+        "access_factor": 1.6,
+    },
+    "port keats": {
+        "status": "RESTRICTED_4WD",
+        "reason": "Unsealed access road washed out; 4WD heavy convoy",
+        "transit_mode": "4WD Heavy Convoy",
+        "access_factor": 1.6,
+    },
+    "maningrida": {
+        "status": "RESTRICTED_4WD",
+        "reason": "Central Arnhem unsealed road waterlogged; heavy 4WD or Sea Barge",
+        "transit_mode": "Sea Barge / Heavy 4WD",
+        "access_factor": 1.7,
+    },
+    "ramingining": {
+        "status": "RESTRICTED_4WD",
+        "reason": "Arafura swamp road cuts; 4WD convoy or coastal barge",
+        "transit_mode": "Sea Barge / Heavy 4WD",
+        "access_factor": 1.7,
+    },
+    "ngukurr": {
+        "status": "RESTRICTED_4WD",
+        "reason": "Roper Highway river causeways submerged during peak rains",
+        "transit_mode": "High Clearance 4WD Convoy",
+        "access_factor": 1.5,
+    },
+    "borroloola": {
+        "status": "RESTRICTED_4WD",
+        "reason": "Carpentaria Highway unsealed washouts",
+        "transit_mode": "High Clearance 4WD Convoy",
+        "access_factor": 1.4,
+    },
+    "galiwinku": {
+        "status": "ISLAND_WATER",
+        "reason": "Elcho Island; Sea barge or charter aircraft year-round",
+        "transit_mode": "Sea Barge / Light Aircraft",
+        "access_factor": 1.8,
+    },
+    "wurrumiyanga": {
+        "status": "ISLAND_WATER",
+        "reason": "Bathurst Island; SeaLink Ferry or chartered flight",
+        "transit_mode": "Sea Ferry / Light Aircraft",
+        "access_factor": 1.5,
+    },
+    "groote eylandt": {
+        "status": "ISLAND_WATER",
+        "reason": "Gulf Island; Sea barge or scheduled air service",
+        "transit_mode": "Sea Barge / Air Freight",
+        "access_factor": 1.9,
+    },
+    "lajamanu": {
+        "status": "RESTRICTED_4WD",
+        "reason": "Tanami Track unsealed washouts; high clearance required",
+        "transit_mode": "High Clearance 4WD Convoy",
+        "access_factor": 1.5,
+    },
+    "kalkarindji": {
+        "status": "RESTRICTED_4WD",
+        "reason": "Victoria River causeway flood advisories",
+        "transit_mode": "High Clearance 4WD Convoy",
+        "access_factor": 1.4,
+    },
+}
+
 
 def clean_location_name(loc: str) -> str:
     """Normalize location string, stripping suffixes like (Urban) or (Remote)."""
     if not isinstance(loc, str):
         return "darwin"
-    cleaned = re.sub(r"\s*\((urban|remote)\)", "", loc, flags=re.IGNORECASE).strip().lower()
+    cleaned = re.sub(r"\s*\((urban|remote|inflow|cyclone|depot)\)", "", loc, flags=re.IGNORECASE).strip().lower()
     return cleaned
 
 
@@ -78,6 +219,93 @@ def get_coords(location: str) -> tuple[float, float]:
     return NT_COMMUNITY_COORDS["darwin"]
 
 
+def haversine_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
+    """Calculate great-circle distance between two GPS coordinates in kilometers."""
+    r = 6371.0
+    dlat = math.radians(lat2 - lat1)
+    dlon = math.radians(lon2 - lon1)
+    a = (
+        math.sin(dlat / 2) ** 2
+        + math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) * math.sin(dlon / 2) ** 2
+    )
+    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+    return r * c
+
+
+def find_closest_depot(lat: float, lon: float) -> dict:
+    """Find the geographically nearest NT fleet depot to a given coordinate."""
+    best_depot = NT_DEPOTS["darwin"]
+    min_dist = float("inf")
+    for depot in NT_DEPOTS.values():
+        dist = haversine_km(lat, lon, depot["lat"], depot["lon"])
+        if dist < min_dist:
+            min_dist = dist
+            best_depot = depot
+    return best_depot
+
+
+def get_depot_info(depot_key: str) -> dict:
+    """Retrieve depot metadata by key or fallback to Darwin."""
+    key = depot_key.lower().replace(" ", "_")
+    return NT_DEPOTS.get(key, NT_DEPOTS["darwin"])
+
+
+def get_road_status(location: str, is_wet_season: bool = False) -> dict:
+    """Determine accessibility, road condition, and transit mode for a location."""
+    clean_loc = clean_location_name(location)
+    is_island = clean_loc in ("galiwinku", "elcho island", "wurrumiyanga", "tiwi islands", "groote eylandt", "alyangula")
+
+    if not is_wet_season:
+        if is_island:
+            return {
+                "status": "ISLAND_WATER",
+                "status_label": "⚓ Island Transit (Barge/Ferry)",
+                "reason": "Island community; maritime or aviation route required",
+                "transit_mode": "Sea Barge / Air Freight",
+                "access_factor": 1.5,
+                "badge_color": "#00B4D8",
+            }
+        return {
+            "status": "OPEN",
+            "status_label": "✅ Open / Sealed Road",
+            "reason": "Dry season: standard road fleet access open",
+            "transit_mode": "Standard Road Fleet",
+            "access_factor": 1.0,
+            "badge_color": "#2ECC71",
+        }
+
+    # Wet season lookup
+    if clean_loc in WET_SEASON_ROAD_STATUS:
+        info = WET_SEASON_ROAD_STATUS[clean_loc]
+        status = info["status"]
+        if status == "IMPASSABLE":
+            badge_color = "#E74C3C"
+            label = "⛔ Impassable Road (Flooded - Air/Barge Only)"
+        elif status == "RESTRICTED_4WD":
+            badge_color = "#F39C12"
+            label = "⚠️ Restricted Road (4WD Heavy Convoy Only)"
+        else:
+            badge_color = "#3498DB"
+            label = "⚓ Island Waterway (Barge/Air Only)"
+        return {
+            "status": status,
+            "status_label": label,
+            "reason": info["reason"],
+            "transit_mode": info["transit_mode"],
+            "access_factor": info["access_factor"],
+            "badge_color": badge_color,
+        }
+
+    return {
+        "status": "OPEN",
+        "status_label": "✅ Open / Passable Road",
+        "reason": "Standard highway access passable",
+        "transit_mode": "Standard Road Fleet",
+        "access_factor": 1.0,
+        "badge_color": "#2ECC71",
+    }
+
+
 def wait_time_color(days: float) -> list[int]:
     """Color-code node by waiting duration for Deck.gl:
     - < 14 days: Mint Green (Fresh)
@@ -92,23 +320,55 @@ def wait_time_color(days: float) -> list[int]:
         return [46, 204, 113, 210]   # Mint Green
 
 
-def build_geospatial_dataframe(scored_df: pd.DataFrame, jobs_per_week: int) -> pd.DataFrame:
-    """Enrich scored dataframe with coordinates, route membership, and styling."""
+def build_geospatial_dataframe(
+    scored_df: pd.DataFrame,
+    jobs_per_week: int,
+    depot_mode: str = "closest",
+    is_wet_season: bool = False,
+) -> pd.DataFrame:
+    """Enrich scored dataframe with coordinates, assigned depot, road conditions, and route flags."""
     df = scored_df.copy()
-    
+
     coords = df["location"].apply(get_coords)
     df["lat"] = [c[0] for c in coords]
     df["lon"] = [c[1] for c in coords]
-    
-    # Safe street-level residential micro-offsets (~80-120m lot separation)
-    # For coastal communities (Darwin, Nightcliff, Wadeye), step strictly INLAND so pins NEVER enter water
+
+    # Assign depot
+    assigned_depots = []
+    depot_dists = []
+    for _, row in df.iterrows():
+        lat, lon = row["lat"], row["lon"]
+        if depot_mode == "closest":
+            depot = find_closest_depot(lat, lon)
+        else:
+            depot = get_depot_info(depot_mode)
+        assigned_depots.append(depot)
+        # Outback driving curvature factor is ~1.28x over great-circle haversine
+        calc_dist = max(10.0, haversine_km(lat, lon, depot["lat"], depot["lon"]) * 1.28)
+        depot_dists.append(round(calc_dist, 1))
+
+    df["depot_id"] = [d["id"] for d in assigned_depots]
+    df["depot_name"] = [d["name"] for d in assigned_depots]
+    df["depot_lat"] = [d["lat"] for d in assigned_depots]
+    df["depot_lon"] = [d["lon"] for d in assigned_depots]
+    df["effective_distance_km"] = depot_dists
+
+    # Road condition and wet season status
+    road_statuses = [get_road_status(loc, is_wet_season) for loc in df["location"]]
+    df["road_status"] = [r["status"] for r in road_statuses]
+    df["road_status_label"] = [r["status_label"] for r in road_statuses]
+    df["road_reason"] = [r["reason"] for r in road_statuses]
+    df["transit_mode"] = [r["transit_mode"] for r in road_statuses]
+    df["access_factor"] = [r["access_factor"] for r in road_statuses]
+
+    # Street-level residential micro-offsets
     INLAND_VECTORS = {
-        "darwin": (0.0010, 0.0008),      # Step northeast towards Stuart Park
+        "darwin": (0.0010, 0.0008),
         "darwin city": (0.0010, 0.0008),
-        "nightcliff": (0.0008, 0.0012),   # Step east/northeast towards Millner
-        "wadeye": (0.0006, 0.0012),       # Step east inland away from coast
+        "nightcliff": (0.0008, 0.0012),
+        "wadeye": (0.0006, 0.0012),
         "port keats": (0.0006, 0.0012),
-        "maningrida": (-0.0008, 0.0012),  # Step southeast inland
+        "maningrida": (-0.0008, 0.0012),
     }
 
     counts = {}
@@ -123,7 +383,6 @@ def build_geospatial_dataframe(scored_df: pd.DataFrame, jobs_per_week: int) -> p
                 df.at[idx, "lat"] = row["lat"] + v_lat * count
                 df.at[idx, "lon"] = row["lon"] + v_lon * count
             else:
-                # Standard inland community micro-offset (~100m street dispersion)
                 d_lat = 0.0010 * count * (1 if count % 2 == 1 else -1)
                 d_lon = 0.0010 * count * (1 if count % 3 == 0 else -1)
                 df.at[idx, "lat"] = row["lat"] + d_lat
@@ -131,9 +390,9 @@ def build_geospatial_dataframe(scored_df: pd.DataFrame, jobs_per_week: int) -> p
 
     df["color"] = df["days_waiting"].apply(wait_time_color)
     df["radius"] = df["days_waiting"].apply(lambda d: max(14000, min(45000, int(15000 + d * 500))))
-    
-    # Safe string fields for Pydeck tooltip (Pydeck JS template renderer requires plain keys without format specifiers)
-    df["distance_km_str"] = df["distance_km"].apply(lambda d: f"{d:.0f} km")
+
+    # Safe string fields for Pydeck tooltip
+    df["distance_km_str"] = df["effective_distance_km"].apply(lambda d: f"{d:.0f} km")
     df["safety_prob_str"] = df["safety_prob"].apply(lambda s: f"{s:.0%}")
     df["days_waiting_str"] = df["days_waiting"].apply(lambda w: f"{int(w)} days")
     df["urgency_str"] = df["base_urgency"].apply(lambda u: f"{u:.1f}")
@@ -148,21 +407,23 @@ def build_geospatial_dataframe(scored_df: pd.DataFrame, jobs_per_week: int) -> p
     # Route membership flags
     df["in_equity_route"] = df["rank"] <= jobs_per_week
     df["in_efficiency_route"] = df["rank_efficiency"] <= jobs_per_week
-    
+
     return df
 
 
 def generate_route_links(geo_df: pd.DataFrame, route_type: str = "both") -> pd.DataFrame:
-    """Generate link records connecting Darwin Depot to dispatched communities."""
+    """Generate link records connecting respective fleet depots to dispatched communities."""
     links = []
-    depot_lat, depot_lon = DARWIN_DEPOT["lat"], DARWIN_DEPOT["lon"]
 
     if route_type in ("efficiency", "both"):
         eff_jobs = geo_df[geo_df["in_efficiency_route"]].copy()
         for _, row in eff_jobs.iterrows():
+            depot_lat = row.get("depot_lat", DARWIN_DEPOT["lat"])
+            depot_lon = row.get("depot_lon", DARWIN_DEPOT["lon"])
+            depot_name = row.get("depot_name", DARWIN_DEPOT["name"])
             links.append({
                 "route_type": "Efficiency-First (Cheapest)",
-                "source_name": DARWIN_DEPOT["name"],
+                "source_name": depot_name,
                 "source_lat": depot_lat,
                 "source_lon": depot_lon,
                 "target_name": row["location"],
@@ -170,7 +431,7 @@ def generate_route_links(geo_df: pd.DataFrame, route_type: str = "both") -> pd.D
                 "target_lon": row["lon"],
                 "ticket_id": row["ticket_id"],
                 "location": row["location"],
-                "distance_km": row["distance_km"],
+                "distance_km": row.get("effective_distance_km", row["distance_km"]),
                 "distance_km_str": row.get("distance_km_str", f"{row['distance_km']:.0f} km"),
                 "category": row["category"].title(),
                 "days_waiting_str": row.get("days_waiting_str", f"{int(row['days_waiting'])} days"),
@@ -179,7 +440,8 @@ def generate_route_links(geo_df: pd.DataFrame, route_type: str = "both") -> pd.D
                 "rank": row["rank"],
                 "rank_shift": row["rank_shift"],
                 "rank_efficiency": row["rank_efficiency"],
-                "clean_description": f"Cheapest trip route connecting Darwin Depot to {row['location']}",
+                "transit_mode": row.get("transit_mode", "Standard Road Fleet"),
+                "clean_description": f"Cheapest trip route from {depot_name} to {row['location']}",
                 "color": [0, 180, 255, 200],  # Cyan / Blue
                 "width": 3.5,
             })
@@ -187,9 +449,12 @@ def generate_route_links(geo_df: pd.DataFrame, route_type: str = "both") -> pd.D
     if route_type in ("equity", "both"):
         eq_jobs = geo_df[geo_df["in_equity_route"]].copy()
         for _, row in eq_jobs.iterrows():
+            depot_lat = row.get("depot_lat", DARWIN_DEPOT["lat"])
+            depot_lon = row.get("depot_lon", DARWIN_DEPOT["lon"])
+            depot_name = row.get("depot_name", DARWIN_DEPOT["name"])
             links.append({
                 "route_type": "EquiTriage (Fairness-Adjusted)",
-                "source_name": DARWIN_DEPOT["name"],
+                "source_name": depot_name,
                 "source_lat": depot_lat,
                 "source_lon": depot_lon,
                 "target_name": row["location"],
@@ -197,7 +462,7 @@ def generate_route_links(geo_df: pd.DataFrame, route_type: str = "both") -> pd.D
                 "target_lon": row["lon"],
                 "ticket_id": row["ticket_id"],
                 "location": row["location"],
-                "distance_km": row["distance_km"],
+                "distance_km": row.get("effective_distance_km", row["distance_km"]),
                 "distance_km_str": row.get("distance_km_str", f"{row['distance_km']:.0f} km"),
                 "category": row["category"].title(),
                 "days_waiting_str": row.get("days_waiting_str", f"{int(row['days_waiting'])} days"),
@@ -206,7 +471,8 @@ def generate_route_links(geo_df: pd.DataFrame, route_type: str = "both") -> pd.D
                 "rank": row["rank"],
                 "rank_shift": row["rank_shift"],
                 "rank_efficiency": row["rank_efficiency"],
-                "clean_description": f"Fairness-adjusted dispatch corridor reaching {row['location']}",
+                "transit_mode": row.get("transit_mode", "Standard Road Fleet"),
+                "clean_description": f"Fairness-adjusted dispatch corridor from {depot_name} to {row['location']}",
                 "color": [255, 191, 0, 230],  # Glowing Gold / Amber
                 "width": 4.5,
             })
@@ -218,26 +484,31 @@ def build_pydeck_chart(
     geo_df: pd.DataFrame,
     jobs_per_week: int,
     route_view: str = "both",
-    use_arcs: bool = True
+    use_arcs: bool = True,
 ) -> pdk.Deck:
-    """Construct an interactive Pydeck Deck visualization using free Carto Dark GL tiles."""
+    """Construct an interactive Pydeck Deck visualization with multi-depot support."""
     layers = []
 
-    # 1. Depot Hub Marker with tooltip fallback attributes
-    depot_record = dict(DARWIN_DEPOT)
-    depot_record.update({
-        "distance_km_str": "0 km",
-        "ticket_id": "DEPOT-HQ",
-        "category": "Central Fleet Base",
-        "days_waiting_str": "Headquarters",
-        "safety_prob_str": "Active",
-        "urgency_str": "HQ",
-        "rank": "0",
-        "rank_shift": "–",
-        "rank_efficiency": "0",
-        "clean_description": "Darwin Central Public Housing Fleet Dispatch Hub",
-    })
-    depot_df = pd.DataFrame([depot_record])
+    # 1. Multi-Depot Hub Markers
+    depot_rows = []
+    for depot in NT_DEPOTS.values():
+        depot_rows.append({
+            "name": depot["name"],
+            "location": depot["location"],
+            "lat": depot["lat"],
+            "lon": depot["lon"],
+            "distance_km_str": "Hub Base",
+            "ticket_id": f"DEPOT-{depot['id'].upper()}",
+            "category": f"Regional Depot ({depot['region']})",
+            "days_waiting_str": "Active Depot",
+            "safety_prob_str": "Operational",
+            "urgency_str": "HQ",
+            "rank": "0",
+            "rank_shift": "–",
+            "rank_efficiency": "0",
+            "clean_description": f"{depot['name']} staging fleet operations for the {depot['region']} region.",
+        })
+    depot_df = pd.DataFrame(depot_rows)
     depot_layer = pdk.Layer(
         "ScatterplotLayer",
         data=depot_df,
@@ -295,7 +566,6 @@ def build_pydeck_chart(
     )
     layers.append(scatter_layer)
 
-    # Central NT ViewState
     view_state = pdk.ViewState(
         latitude=-16.5,
         longitude=133.5,
@@ -306,7 +576,7 @@ def build_pydeck_chart(
 
     tooltip = {
         "html": """
-        <div style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 11px; line-height: 1.4; color: #FFF; width: 100%; box-sizing: border-box;">
+        <div style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 11px; line-height: 1.4; color: #FFF; width: 100%; box-sizing: border-box;">
             <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 12px; border-bottom: 1px solid rgba(255, 191, 0, 0.5); padding-bottom: 6px; margin-bottom: 8px;">
                 <span style="color: #FFBF00; font-weight: 700; font-size: 13px; letter-spacing: 0.2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">📍 {location}</span>
                 <span style="color: #9CA3AF; font-size: 11px; font-weight: 500; white-space: nowrap; margin-right: 2px;">{distance_km_str}</span>
@@ -342,7 +612,7 @@ def build_pydeck_chart(
             "width": "320px",
             "maxWidth": "320px",
             "wordWrap": "break-word",
-        }
+        },
     }
 
     return pdk.Deck(
@@ -356,9 +626,9 @@ def build_pydeck_chart(
 def build_folium_map(
     geo_df: pd.DataFrame,
     jobs_per_week: int,
-    route_view: str = "both"
+    route_view: str = "both",
 ) -> folium.Map:
-    """Build a rich, interactive geographical OpenStreetMap of the Northern Territory."""
+    """Build a rich, interactive geographical OpenStreetMap with multi-depot markers and road access status."""
     m = folium.Map(
         location=[-16.5, 133.5],
         zoom_start=5,
@@ -366,42 +636,43 @@ def build_folium_map(
         control_scale=True,
     )
 
-    depot_lat, depot_lon = DARWIN_DEPOT["lat"], DARWIN_DEPOT["lon"]
+    # 1. Multi-Depot Markers
+    for depot in NT_DEPOTS.values():
+        folium.Marker(
+            location=[depot["lat"], depot["lon"]],
+            popup=folium.Popup(f"<b>{depot['name']}</b><br/>Region: {depot['region']}<br/>{depot['location']}", max_width=250),
+            tooltip=depot["name"],
+            icon=folium.Icon(color="black", icon="wrench", prefix="fa"),
+        ).add_to(m)
 
-    # 1. Depot Headquarters Marker
-    folium.Marker(
-        location=[depot_lat, depot_lon],
-        popup=folium.Popup(f"<b>{DARWIN_DEPOT['name']}</b><br/>Central Housing Dispatch Hub", max_width=250),
-        tooltip="Darwin Fleet Depot",
-        icon=folium.Icon(color="black", icon="home", prefix="fa"),
-    ).add_to(m)
-
-    # 2. Route Corridors
-    depot_pt = [depot_lat, depot_lon]
-
+    # 2. Route Corridors from respective depots
     if route_view in ("efficiency", "both"):
         eff_jobs = geo_df[geo_df["in_efficiency_route"]]
         for _, row in eff_jobs.iterrows():
+            depot_lat = row.get("depot_lat", DARWIN_DEPOT["lat"])
+            depot_lon = row.get("depot_lon", DARWIN_DEPOT["lon"])
             folium.PolyLine(
-                locations=[depot_pt, [row["lat"], row["lon"]]],
+                locations=[[depot_lat, depot_lon], [row["lat"], row["lon"]]],
                 color="#00B4D8",
                 weight=3.5,
                 opacity=0.85,
-                tooltip=f"Efficiency Run: {row['location']} (#{int(row['rank_efficiency'])})",
+                tooltip=f"Efficiency Run from {row.get('depot_name', 'Depot')}: {row['location']} (#{int(row['rank_efficiency'])})",
             ).add_to(m)
 
     if route_view in ("equity", "both"):
         eq_jobs = geo_df[geo_df["in_equity_route"]]
         for _, row in eq_jobs.iterrows():
+            depot_lat = row.get("depot_lat", DARWIN_DEPOT["lat"])
+            depot_lon = row.get("depot_lon", DARWIN_DEPOT["lon"])
             folium.PolyLine(
-                locations=[depot_pt, [row["lat"], row["lon"]]],
+                locations=[[depot_lat, depot_lon], [row["lat"], row["lon"]]],
                 color="#FFBF00",
                 weight=4.5,
                 opacity=0.95,
-                tooltip=f"EquiTriage Run: {row['location']} (#{int(row['rank'])})",
+                tooltip=f"EquiTriage Run from {row.get('depot_name', 'Depot')}: {row['location']} (#{int(row['rank'])})",
             ).add_to(m)
 
-    # 3. Community Nodes with Wait-Time Styling
+    # 3. Community Nodes with Wait-Time Styling & Road Status
     for _, row in geo_df.iterrows():
         days = row["days_waiting"]
         if days > 45:
@@ -414,12 +685,18 @@ def build_folium_map(
             color = "#2ECC71"       # Green
             label = "Fresh (<14d)"
 
+        road_status_label = row.get("road_status_label", "Standard Road Fleet")
+        transit_mode = row.get("transit_mode", "Standard Road Fleet")
+
         popup_html = f"""
-        <div style="font-family: sans-serif; font-size: 12px; width: 220px; line-height: 1.4;">
+        <div style="font-family: sans-serif; font-size: 12px; width: 230px; line-height: 1.4;">
             <h4 style="margin: 0 0 5px 0; color: #1A1A1A; border-bottom: 2px solid {color}; padding-bottom: 2px;">
-                {row['location']} ({row['distance_km']:.0f} km)
+                {row['location']} ({row.get('effective_distance_km', row['distance_km']):.0f} km)
             </h4>
             <b>Ticket:</b> <code>{row['ticket_id']}</code><br/>
+            <b>Assigned Depot:</b> {row.get('depot_name', 'Darwin Depot')}<br/>
+            <b>Road/Access:</b> <span>{road_status_label}</span><br/>
+            <b>Transit:</b> <span>{transit_mode}</span><br/>
             <b>Category:</b> {row['category'].title()}<br/>
             <b>Days Waiting:</b> <b>{int(days)} days</b> ({label})<br/>
             <b>Safety Risk:</b> {row['safety_prob']:.0%}<br/>
@@ -437,8 +714,8 @@ def build_folium_map(
             fill=True,
             fill_color=color,
             fill_opacity=0.9,
-            popup=folium.Popup(popup_html, max_width=250),
-            tooltip=f"{row['location']} | {row['ticket_id']} ({int(days)}d)",
+            popup=folium.Popup(popup_html, max_width=260),
+            tooltip=f"{row['location']} | {row['ticket_id']} ({int(days)}d) | {transit_mode}",
         ).add_to(m)
 
     return m
